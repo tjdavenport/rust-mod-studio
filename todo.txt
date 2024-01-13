@@ -1,0 +1,12 @@
+DONE 1. refactor communication between json rpc connection, ipcMain, and ipcRenderer by creating two or three primary ipcMain event handlers for sending requests and notifications through the json rpc connection.
+
+DONE 2. refactor file reading and writing so that file handling isn't limited to the csharp project directory, and try to incorporate TextDocument directly into file handling so TextDocument is passed around rather than ad-hoc filename and contents strings.
+
+3. Incorporate electron Tray by using it to allow the user to re-open the UI after closing the main window. This will prevent child processes such as OmniSharp and the Rust dedicated server from exiting, thus providing a better user experience because the user won't have to wait for child processes to restart if they accidentatlly close the main window.
+
+4. Implement signature help requests
+
+DONE 5. Experiment with rust dedicated server, oxide, and omnisharp to find out if omnisharp can source completion items from DLLs from oxide and rust dedicated server. This will require a c# project file that has references to relevant DLLs.
+NOTE 5. THIS NEEDS TO BE REMOVED DUE TO A CIRCULAR DEP ACCORDING TO OMNISHARP <Reference Include="System.Runtime" />
+
+6. Implement code action requests
