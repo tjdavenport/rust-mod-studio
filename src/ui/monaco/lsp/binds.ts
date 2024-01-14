@@ -3,7 +3,7 @@ import {
   PublishDiagnosticsNotification,
   PublishDiagnosticsParams,
 } from 'vscode-languageserver-protocol';
-import { diagnosticToMonaco } from './adapter';
+import * as converters from './adapter/converters';
 
 export const bindDiagnosticsNotification = (monaco: MonacoInstance) => {
   window.lsp.onNotification<PublishDiagnosticsParams>(PublishDiagnosticsNotification.method, (params) => {
@@ -13,7 +13,7 @@ export const bindDiagnosticsNotification = (monaco: MonacoInstance) => {
 
     if (model) {
       monaco.editor.setModelMarkers(model, 'OmniSharp', params.diagnostics.map(diagnostic => {
-        return diagnosticToMonaco(diagnostic);
+        return converters.diagnostic.fromLsp.toMarkerData(diagnostic);
       }));
     }
   });

@@ -13,6 +13,7 @@ export const connectToFs = (monaco: MonacoInstance) => {
 
 export const connectToLSP = (monaco: MonacoInstance) => {
   monaco.languages.registerCompletionItemProvider('csharp', lspProviders.csharpCompletionItemProvider);
+  monaco.languages.registerCodeActionProvider('csharp', lspProviders.csharpCodeActionProvider);
   monaco.editor.onDidCreateModel(lspHandlers.handleDidCreateModel);
   monaco.editor.onWillDisposeModel(lspHandlers.handleWillDisposeModel);
   lspBinds.bindDiagnosticsNotification(monaco);

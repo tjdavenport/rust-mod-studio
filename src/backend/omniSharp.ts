@@ -82,6 +82,16 @@ export const start = (app: Electron.App) => {
 
     const capabilities: ClientCapabilities = {
       textDocument: {
+        codeAction: {
+          dataSupport: true,
+          resolveSupport: {
+            properties: []
+          },
+        },
+        publishDiagnostics: {
+          relatedInformation: true,
+          codeDescriptionSupport: true,
+        },
         completion: {
           dynamicRegistration: false,
           contextSupport: true,
