@@ -1,6 +1,6 @@
 import { MonacoInstance } from '../monaco';
 import { useCsharpProjectFile } from '../hooks/fs';
-import Monaco, { useMonaco } from '@monaco-editor/react';
+import Monaco from '@monaco-editor/react';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 type EditorProps = {

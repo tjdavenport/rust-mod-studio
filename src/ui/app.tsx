@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { useMonaco } from '@monaco-editor/react';
 import { useCsharpProjectDir } from './hooks/fs';
 import { connectToLSP, connectToFs } from './monaco';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 
 const App = () => {
   const { textFileURIs, add } = useCsharpProjectDir();

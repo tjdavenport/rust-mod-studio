@@ -1,4 +1,5 @@
 import {
+  CodeLens,
   WorkspaceEdit,
   LSPAny,
   CodeAction,
@@ -11,6 +12,22 @@ import {
 } from 'vscode-languageserver-protocol';
 import maps from './maps';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+
+let codeLensId = 0;
+export const codeLens = {
+  fromLsp: {
+    toCodeLens: (codeLens: CodeLens): monaco.languages.CodeLens => {
+      return {
+        id: String(codeLensId++),
+        command: {
+          id: String(codeLensId++),
+          ...codeLens.command
+        },
+        range: range.fromLsp.toRange(codeLens.range)
+      };
+    },
+  }
+};
 
 export const codeAction = {
   fromLsp: {
