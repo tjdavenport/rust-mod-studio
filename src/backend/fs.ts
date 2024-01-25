@@ -15,6 +15,10 @@ export const readTextByURI = async (uri: string) => {
   return buffer.toString();
 };
 
+export const getCsharpProjectDirURI = (app: Electron.App) => {
+  return pathToFileURL(path.csharpProjectDir(app)).href;
+};
+
 export const readCsharpProjectDir = async (app: Electron.App) => {
   const filenames = await fsx.readdir(path.csharpProjectDir(app));
   const cSharpFilenames = filenames.filter((filename) => {
@@ -27,13 +31,16 @@ export const readCsharpProjectDir = async (app: Electron.App) => {
 };
 
 export const bindIpcMain = (app: Electron.App) => {
+  ipcMain.handle('fs-get-csharp-project-dir-uri', () => {
+    return getCsharpProjectDirURI(app);
+  });
   ipcMain.handle('fs-read-csharp-project-dir', async () => {
     return readCsharpProjectDir(app);
   });
   ipcMain.handle('fs-read-text-by-uri', async (event, uri: string) => {
     return readTextByURI(uri);
   });
-  ipcMain.on('fs-write-text-by-uri', async (event, uri: string, contents: string) => {
+  ipcMain.handle('fs-write-text-by-uri', async (event, uri: string, contents: string) => {
     return writeTextByURI(uri, contents);
   });
 };

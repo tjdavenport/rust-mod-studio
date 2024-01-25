@@ -24,6 +24,41 @@ export const applicationMenu = Menu.buildFromTemplate([
     ]
   },
   {
-    role: 'toggleDevTools'
+    label: '&Edit',
+    submenu: [
+      {
+        label: 'Cut',
+        role: 'cut' 
+      },
+      {
+        label: 'Copy',
+        role: 'copy' 
+      },
+      {
+        label: 'Paste',
+        role: 'paste' 
+      },
+      {
+        label: 'Select All',
+        role: 'selectAll'
+      },
+      {
+        label: 'Undo',
+        role: 'undo' 
+      },
+      {
+        label: 'Redo',
+        role: 'redo' 
+      }
+    ],
+  },
+  {
+    label: '&View',
+    submenu: [
+      {
+        label: 'Toggle Dev Tools',
+        role: 'toggleDevTools'
+      },
+    ]
   }
 ]);

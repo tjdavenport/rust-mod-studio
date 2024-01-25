@@ -9,8 +9,9 @@ interface LspApi {
 
 interface FsApi {
   readCsharpProjectDir: () => Promise<string[]>;
+  getCsharpProjectDirURI: () => Promise<string>;
   readTextByURI: (url: string) => Promise<string>;
-  writeTextByURI: (url: string, contents: string) => void;
+  writeTextByURI: (url: string, contents: string) => Promise<void>;
 }
 
 interface AppMenuApi {
@@ -49,6 +50,9 @@ const fs: FsApi = {
   readCsharpProjectDir: () => {
     return ipcRenderer.invoke('fs-read-csharp-project-dir');
   },
+  getCsharpProjectDirURI: () => {
+    return ipcRenderer.invoke('fs-get-csharp-project-dir-uri');
+  },
   readTextByURI: (uri: string) => {
     return ipcRenderer.invoke('fs-read-text-by-uri', uri);
   },
@@ -56,7 +60,7 @@ const fs: FsApi = {
     /**
      * @TODO - consider using invoke so write errors can be handled
      */
-    return ipcRenderer.send('fs-write-text-by-uri', uri, contents);
+    return ipcRenderer.invoke('fs-write-text-by-uri', uri, contents);
   },
 };
 

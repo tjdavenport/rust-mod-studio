@@ -49,9 +49,13 @@ table {
 
 html {
   background-color: #272822;
-  font-size: 16px;
-  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-family: Menlo, Monaco, "Courier New", monospace;
   color: #f8f8f2;
+}
+input {
+  font-size: 14px;
+  font-family: Menlo, Monaco, "Courier New", monospace;
 }
 
 h1 {

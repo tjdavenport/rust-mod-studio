@@ -1,12 +1,23 @@
 import { useEffect, useState, useCallback } from 'react';
 
-export const useCsharpProjectDir = () => {
-  const [textFileURIs, setTextFileURIs] = useState<string[]>([]);
-  const add = useCallback((uri: string) => {
-    setTextFileURIs([...textFileURIs, uri]);
-  }, [textFileURIs]);
+export const useCsharpProjectDirURI = () => {
+  const [uri, setURI] = useState<string>('');
 
   useEffect(() => {
+    window.fs.getCsharpProjectDirURI()
+    .then(uri => {
+      setURI(uri);
+    }).catch(error => {
+      console.error(error);
+    });
+  }, []);
+
+  return uri;
+};
+
+export const useCsharpProjectDir = () => {
+  const [textFileURIs, setTextFileURIs] = useState<string[]>([]);
+  const read = useCallback(() => {
     window.fs.readCsharpProjectDir()
       .then((readURIs: string[]) => {
         setTextFileURIs(readURIs);
@@ -16,9 +27,13 @@ export const useCsharpProjectDir = () => {
       })
   }, []);
 
+  useEffect(() => {
+    read();
+  }, []);
+
   return {
     textFileURIs,
-    add
+    read,
   };
 };
 

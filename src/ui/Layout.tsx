@@ -89,7 +89,7 @@ const Layout = ({ children, style, PrimaryIcon }: LayoutProps) => {
         </a>
         <Tabs/>
       </div>
-      <div style={{ height: 'calc(100vh - 40px)', width: '100vw', ...style }}>{children}</div>
+      <div style={{ height: `calc(100vh - 49px)`, width: '100vw', ...style }}>{children}</div>
     </>
   );
 };

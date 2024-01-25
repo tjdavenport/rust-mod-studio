@@ -10,7 +10,7 @@ import { connectToLSP, connectToFs } from './monaco';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 
 const App = () => {
-  const { textFileURIs, add } = useCsharpProjectDir();
+  const { textFileURIs, read } = useCsharpProjectDir();
   const monaco = useMonaco();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const App = () => {
       <Nav/>
       <Routes>
         <Route path="/" element={(
-          <HomePage projectURIs={textFileURIs} />
+          <HomePage projectURIs={textFileURIs} read={read} />
         )}/>
         <Route path="/edit/:uri" element={(
           monaco && <EditPage/>
