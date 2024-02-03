@@ -5,7 +5,7 @@ const platform = process.platform;
 const isWindows = platform === 'win32';
 const isOSX = platform === 'darwin';
 
-const getRootDir = (app: Electron.App) => {
+export const getRootDir = (app: Electron.App) => {
   if (isWindows) {
     return path.join(app.getPath('appData'), 'rust-mod-studio');
   }
@@ -42,17 +42,7 @@ export const omniSharp = (app: Electron.App) => {
 };
 
 export const omniSharpDir = (app: Electron.App) => {
-  if (isWindows) {
-    return path.join(getRootDir(app), 'omnisharp');
-  }
-  if (isOSX) {
-    return path.join(getRootDir(app), 'omnisharp');
-  }
-
-  /**
-   * @TODO - handle unsupported platforms gracefully
-   */
-  return path.join('/');
+  return path.join(getRootDir(app), 'omnisharp');
 };
 
 export const steamCmd = (app: Electron.App) => {

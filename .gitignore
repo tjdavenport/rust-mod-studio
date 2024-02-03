@@ -131,3 +131,4 @@ dist
 
 .webpack/
 .DS_Store
+test/tmp/

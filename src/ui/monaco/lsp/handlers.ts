@@ -10,7 +10,7 @@ import {
   DidChangeTextDocumentParams,
 } from 'vscode-languageserver-protocol';
 import { matchPath } from 'react-router-dom';
-import { MenuClickParams } from '../../../constants';
+import { MenuClickParams } from '../../../shared';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 export const handleWillDisposeModel = (model: monaco.editor.ITextModel) => {

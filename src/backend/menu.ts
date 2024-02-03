@@ -1,6 +1,6 @@
 import { URL } from 'url';
 import { Menu, ipcMain } from 'electron';
-import { MenuItemId, MenuClickParams } from '../constants';
+import { MenuItemId, MenuClickParams } from '../shared';
 
 export const applicationMenu = Menu.buildFromTemplate([
   {

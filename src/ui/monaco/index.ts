@@ -1,6 +1,6 @@
 import * as lspBinds from './lsp/binds';
+import { MenuItemId } from '../../shared';
 import * as fsHandlers from './fs/handlers';
-import { MenuItemId } from '../../constants';
 import * as lspHandlers from './lsp/handlers';
 import * as lspProviders from './lsp/providers';
 import * as oxideRustCommands from './oxide.rust/commands';

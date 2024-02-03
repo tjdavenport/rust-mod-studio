@@ -1,6 +1,6 @@
 import { MonacoInstance } from '../';
 import { matchPath } from 'react-router-dom';
-import { MenuClickParams } from '../../../constants';
+import { MenuClickParams } from '../../../shared';
 
 export const handleAppMenuSave = (monaco: MonacoInstance) => (params: MenuClickParams) => {
   if (params.pathname) {

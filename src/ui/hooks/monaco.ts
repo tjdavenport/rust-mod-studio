@@ -9,6 +9,7 @@ export const useLoadedURIs = () => {
   useEffect(() => {
     if (monaco) {
       const syncModelsState = () => {
+        debugger;
         setLoadedURIs(monaco.editor.getModels().map(model => {
           return model.uri;
         }));

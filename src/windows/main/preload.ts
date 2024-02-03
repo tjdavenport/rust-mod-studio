@@ -1,5 +1,5 @@
-import { MenuItemId, MenuClickParams } from './constants';
 import { ipcRenderer, contextBridge } from 'electron';
+import { MenuItemId, MenuClickParams } from '../../shared';
 
 interface LspApi {
   sendRequest: <R>(method: string, params: any) => Promise<R>;

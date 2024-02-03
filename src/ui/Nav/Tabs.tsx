@@ -26,7 +26,7 @@ const Tab = ({ uri, precedingURI }: { uri: monaco.Uri, precedingURI: monaco.Uri 
     }
 
     monaco.editor.getModel(uri).dispose();
-  }, [monaco]);
+  }, [monaco, precedingURI]);
 
   const tabClass = `tab ${match?.params?.uri === uri.toString() ? 'bb-blue' : 'bb-light-grey'}`;
   return (
