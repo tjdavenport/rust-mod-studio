@@ -3,12 +3,11 @@ import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
 import unzipper from 'unzipper';
-import emitter from './emitter';
 import { join } from 'node:path';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
 import * as rpc from 'vscode-jsonrpc/node';
-import IDependency, { DependencyEvent, DependencyName, EventKind } from './IDependency';
+import { IRunnableDependency, DependencyEvent, DependencyName, EventKind, emitter } from './dependency';
 import {
   InitializeParams,
   InitializeRequest,
@@ -81,7 +80,7 @@ const emitInstallProgress = (msg: string) => {
   emitter.emit('progress', event);
 };
 
-const omniSharp: IDependency = {
+const omniSharp: IRunnableDependency = {
   app: null,
   instance: null,
   readableName: 'OmniSharp',

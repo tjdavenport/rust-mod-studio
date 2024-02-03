@@ -4,8 +4,7 @@ import { App } from 'electron';
 import { join } from 'node:path';
 import assert from 'node:assert';
 import log, { cycleTestLogs } from '../src/backend/log';
-import dependencyEvents from '../src/backend/dependencies/emitter';
-import { DependencyEvent } from '../src/backend/dependencies/IDependency';
+import { DependencyEvent, emitter } from '../src/backend/dependencies/dependency';
 import omniSharp, { MSG_DOWNLOADING, MSG_EXTRACTING } from '../src/backend/dependencies/omniSharp';
 
 const mockedAppPath = join(__dirname, 'tmp', 'installed');
@@ -23,7 +22,7 @@ test('installing OmniSharp', async (t) => {
 
   const capturedEvents: string[] = [];
 
-  dependencyEvents.on('progress', (event: DependencyEvent) => {
+  emitter.on('progress', (event: DependencyEvent) => {
     capturedEvents.push(event.msg);
   });
 

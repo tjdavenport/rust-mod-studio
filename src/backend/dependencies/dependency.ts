@@ -1,6 +1,8 @@
 import cp from 'child_process';
 import EventEmitter from 'node:events';
 
+export const emitter = new EventEmitter();
+
 export enum DependencyName {
   OmniSharp = 'OmniSharp',
 };
@@ -10,17 +12,20 @@ export enum EventKind {
   InstallProgress = 'InstallProgress',
 };
 
-export default interface IDependency {
+export interface IDependency {
   app: null | Electron.App;
-  instance: null | cp.ChildProcess;
   readableName: string;
   getInstallPath: () => string;
-  getStartFilename: () => string;
-  start: () => any;
   install: () => Promise<void>;
   isInstalled: () => Promise<boolean>;
-  isRunning: () => boolean;
 };
+
+export interface IRunnableDependency extends IDependency {
+  instance: null | cp.ChildProcess;
+  getStartFilename: () => string;
+  start: () => any;
+  isRunning: () => boolean;
+}
 
 type ProgressData = {
   percentage: number;
