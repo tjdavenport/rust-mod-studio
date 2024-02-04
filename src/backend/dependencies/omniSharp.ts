@@ -2,16 +2,19 @@ import log from '../log';
 import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
+// may be possible to rely on tar module,
+// @TODO consider & investigate removing unzipper
 import unzipper from 'unzipper';
 import { join } from 'node:path';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
 import * as rpc from 'vscode-jsonrpc/node';
-import { IRunnableDependency, DependencyEvent, DependencyName, EventKind, emitter } from './dependency';
+import { IRunnableDependency, DependencyEvent, DependencyName, EventKind, emitter, logProcess } from './dependency';
 import {
   InitializeParams,
   InitializeRequest,
   ClientCapabilities,
+  MessageConnection,
 } from 'vscode-languageserver-protocol';
 
 const platformArchURL = new Map<string, string>();
@@ -27,35 +30,6 @@ const getOmniSharpOptions = (projectPath: string): string[] => {
     '-s', // specify the root OmniSharp project directory. should include a dotnet project file
     projectPath
   ];
-};
-
-const bind = (instance: cp.ChildProcess) => {
-  if (instance !== null) {
-    instance.stdout.on('data', (data) => {
-      log.info(`stdout: ${data}`);
-    });
-
-    instance.stderr.on('data', (data) => {
-      log.info(`stderr: ${data}`);
-    });
-
-    instance.on('error', (error) => {
-      log.info(error.message);
-    });
-
-    instance.on('exit', (code, signal) => {
-      if (code !== 0) {
-        log.error(`Child process exited with code ${code} and signal ${signal}`);
-      } else {
-        log.info('Child process exited successfully');
-      }
-    });
-
-    instance.on('close', (code) => {
-      log.info(`child process exited with code ${code}`);
-      instance = null;
-    });
-  }
 };
 
 export const MSG_DOWNLOADING = 'Downloading OmniSharp';
@@ -80,7 +54,7 @@ const emitInstallProgress = (msg: string) => {
   emitter.emit('progress', event);
 };
 
-const omniSharp: IRunnableDependency = {
+const omniSharp: IRunnableDependency<MessageConnection | void> = {
   app: null,
   instance: null,
   readableName: 'OmniSharp',
@@ -104,7 +78,11 @@ const omniSharp: IRunnableDependency = {
         }
       );
 
-      bind(this.instance);
+      logProcess(this.instance);
+
+      this.instance.on('exit', () => {
+        this.instance = null;
+      });
 
       const connection = rpc.createMessageConnection(
         new rpc.StreamMessageReader(this.instance.stdout),
@@ -171,7 +149,7 @@ const omniSharp: IRunnableDependency = {
           const extractStream = unzipper.Extract({ path: this.getInstallPath() });
 
           response.body.pipe(extractStream);
-          emitInstallProgress('Extracting OmniSharp');
+          emitInstallProgress(MSG_EXTRACTING);
           response.body.on('error', (error) => {
             emitResponseError();
             return reject(error);
@@ -198,7 +176,7 @@ const omniSharp: IRunnableDependency = {
     try {
       return await fsx.pathExists(join(this.getInstallPath(), this.getStartFilename()));
     } catch (error) {
-      console.error(error);
+      log.error(error);
       return false;
     }
   },
