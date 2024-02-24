@@ -14,21 +14,6 @@ export enum EventKind {
   InstallProgress = 'InstallProgress',
 };
 
-export interface IDependency {
-  app: null | Electron.App;
-  readableName: string;
-  getInstallPath: () => string;
-  install: () => Promise<void>;
-  isInstalled: () => Promise<boolean>;
-};
-
-export interface IRunnableDependency<StartReturn> extends IDependency {
-  instance: null | cp.ChildProcess;
-  getStartFilename: () => string;
-  start: () => StartReturn;
-  isRunning: () => boolean;
-}
-
 type ProgressData = {
   percentage: number;
 };

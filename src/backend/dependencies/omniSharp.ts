@@ -9,12 +9,11 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
 import * as rpc from 'vscode-jsonrpc/node';
-import { IRunnableDependency, DependencyEvent, DependencyName, EventKind, emitter, logProcess } from './dependency';
+import { DependencyEvent, DependencyName, EventKind, emitter, logProcess } from './dependency';
 import {
   InitializeParams,
   InitializeRequest,
   ClientCapabilities,
-  MessageConnection,
 } from 'vscode-languageserver-protocol';
 
 const platformArchURL = new Map<string, string>();
@@ -54,135 +53,133 @@ const emitInstallProgress = (msg: string) => {
   emitter.emit('progress', event);
 };
 
-const omniSharp: IRunnableDependency<MessageConnection | void> = {
-  app: null,
-  instance: null,
-  readableName: 'OmniSharp',
-  getInstallPath() {
-    return join(path.getRootDir(this.app), 'omnisharp');
-  },
-  getStartFilename() {
-    return './OmniSharp';
-  },
-  start() {
-    if (!this.isRunning()) {
-      this.instance = cp.spawn(
-        this.getStartFilename(),
-        getOmniSharpOptions(path.csharpProjectDir(this.app)),
-        {
-          cwd: this.getInstallPath(),
-          env: {
-            ...process.env,
-            DOTNET_ROOT: '/usr/local/share/dotnet'
-          }
-        }
-      );
+let instance: null | cp.ChildProcess = null;
 
-      logProcess(this.instance);
-
-      this.instance.on('exit', () => {
-        this.instance = null;
-      });
-
-      const connection = rpc.createMessageConnection(
-        new rpc.StreamMessageReader(this.instance.stdout),
-        new rpc.StreamMessageWriter(this.instance.stdin)
-      );
-
-      connection.listen();
-
-      const capabilities: ClientCapabilities = {
-        textDocument: {
-          codeAction: {
-            dataSupport: true,
-            resolveSupport: {
-              properties: []
-            },
-          },
-          publishDiagnostics: {
-            relatedInformation: true,
-            codeDescriptionSupport: true,
-          },
-          completion: {
-            dynamicRegistration: false,
-            contextSupport: true,
-            completionItem: {
-              commitCharactersSupport: true,
-            }
-          },
-          synchronization: {
-            didSave: true,
-            dynamicRegistration: true
-          },
-        },
-      };
-      const initializeParams: InitializeParams = {
-        processId: process.pid,
-        capabilities,
-        rootUri: null,
-        workspaceFolders: [
-          {
-            uri: pathToFileURL(path.csharpProjectDir(this.app)).href,
-            name: 'rust-mod-studio'
-          }
-        ]
-      };
-
-      connection.sendRequest(InitializeRequest.type, initializeParams)
-        .then((result) => {
-          console.info(result.capabilities);
-        });
-
-      return connection;
-    }
-  },
-  install() {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const downloadURL = platformArchURL.get(`${process.platform}-${process.arch}`);
-        const response = await fetch(downloadURL);
-        emitInstallProgress(MSG_DOWNLOADING);
-        const emitResponseError = () => emitInstallError(MSG_FAILED_DOWNLOADING);
-
-        if (response.ok) {
-          await fsx.ensureDir(this.getInstallPath());
-          const extractStream = unzipper.Extract({ path: this.getInstallPath() });
-
-          response.body.pipe(extractStream);
-          emitInstallProgress(MSG_EXTRACTING);
-          response.body.on('error', (error) => {
-            emitResponseError();
-            return reject(error);
-          });
-
-          extractStream.on('error', (error) => {
-            emitInstallError(MSG_FAILED_EXTRACTING);
-            return reject(error);
-          });
-          extractStream.on('close', () => {
-            return resolve();
-          });
-        } else {
-          emitResponseError();
-          return reject(new Error('download response not ok'));
-        }
-
-      } catch (error) {
-        return reject(error);
-      }
-    });
-  },
-  async isInstalled() {
-    try {
-      return await fsx.pathExists(join(this.getInstallPath(), this.getStartFilename()));
-    } catch (error) {
-      log.error(error);
-      return false;
-    }
-  },
-  isRunning() {
-    return this.instance !== null;
-  },
+export const getInstallPath = (app: Electron.App) => {
+  return join(path.getRootDir(app), 'omnisharp');
 };
 
-export default omniSharp;
+export const getStartFilename = () => {
+  return './OmniSharp';
+};
+
+export const start = (app: Electron.App) => {
+  if (instance !== null) {
+    return;
+  }
+
+  instance = cp.spawn(
+    getStartFilename(),
+    getOmniSharpOptions(path.csharpProjectDir(app)),
+    {
+      cwd: getInstallPath(app),
+      env: {
+        ...process.env,
+        DOTNET_ROOT: '/usr/local/share/dotnet'
+      }
+    }
+  );
+
+  logProcess(instance);
+
+  instance.on('exit', () => {
+    instance = null;
+  });
+
+  const connection = rpc.createMessageConnection(
+    new rpc.StreamMessageReader(instance.stdout),
+    new rpc.StreamMessageWriter(instance.stdin)
+  );
+
+  connection.listen();
+
+  const capabilities: ClientCapabilities = {
+    textDocument: {
+      codeAction: {
+        dataSupport: true,
+        resolveSupport: {
+          properties: []
+        },
+      },
+      publishDiagnostics: {
+        relatedInformation: true,
+        codeDescriptionSupport: true,
+      },
+      completion: {
+        dynamicRegistration: false,
+        contextSupport: true,
+        completionItem: {
+          commitCharactersSupport: true,
+        }
+      },
+      synchronization: {
+        didSave: true,
+        dynamicRegistration: true
+      },
+    },
+  };
+  const initializeParams: InitializeParams = {
+    processId: process.pid,
+    capabilities,
+    rootUri: null,
+    workspaceFolders: [
+      {
+        uri: pathToFileURL(path.csharpProjectDir(app)).href,
+        name: 'rust-mod-studio'
+      }
+    ]
+  };
+
+  connection.sendRequest(InitializeRequest.type, initializeParams)
+    .then((result) => {
+      console.info(result.capabilities);
+    });
+
+  return connection;
+};
+
+export const install = (app: Electron.App) => {
+  return new Promise<void>(async (resolve, reject) => {
+    try {
+      const downloadURL = platformArchURL.get(`${process.platform}-${process.arch}`);
+      const response = await fetch(downloadURL);
+      emitInstallProgress(MSG_DOWNLOADING);
+      const emitResponseError = () => emitInstallError(MSG_FAILED_DOWNLOADING);
+
+      if (response.ok) {
+        await fsx.ensureDir(getInstallPath(app));
+        const extractStream = unzipper.Extract({ path: getInstallPath(app) });
+
+        response.body.pipe(extractStream);
+        emitInstallProgress(MSG_EXTRACTING);
+        response.body.on('error', (error) => {
+          emitResponseError();
+          return reject(error);
+        });
+
+        extractStream.on('error', (error) => {
+          emitInstallError(MSG_FAILED_EXTRACTING);
+          return reject(error);
+        });
+        extractStream.on('close', () => {
+          return resolve();
+        });
+      } else {
+        emitResponseError();
+        return reject(new Error('download response not ok'));
+      }
+
+    } catch (error) {
+      return reject(error);
+    }
+  });
+};
+
+export const isInstalled = async (app: Electron.App) => {
+  try {
+    return await fsx.pathExists(join(getInstallPath(app), getStartFilename()));
+  } catch (error) {
+    log.error(error);
+    return false;
+  }
+};
