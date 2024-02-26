@@ -7,8 +7,25 @@ import * as steamCMD from './steamCMD';
 import { DependencyInstallError } from '../error';
 import { DependencyEvent, DependencyName, EventKind, emitter } from './dependency';
 
-const errorMessages = {
-  steamCMDRequired: 'steamcMD is required to install rustDedicated',
+export const MSG_DOWNLOADING = 'Installing RustDedicated';
+export const MSG_STEAM_CMD_REQUIRED = 'SteamCMD is required to install RustDedicated';
+export const MSG_FAILED_INSTALLING = 'Failed to install RustDedicated';
+
+const emitInstallError = (msg: string) => {
+  const event: DependencyEvent = {
+    name: DependencyName.RustDedicated,
+    kind: EventKind.InstallError,
+    msg
+  };
+  emitter.emit('error', event);
+};
+const emitInstallProgress = (msg: string) => {
+  const event: DependencyEvent = {
+    name: DependencyName.RustDedicated,
+    kind: EventKind.InstallProgress,
+    msg,
+  };
+  emitter.emit('progress', event);
 };
 
 export const getInstallPath = (app: Electron.App) => {
@@ -58,12 +75,20 @@ export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     try {
       if (!await steamCMD.isInstalled(app)) {
-        return reject(new DependencyInstallError(errorMessages.steamCMDRequired));
+        const error = new DependencyInstallError(MSG_STEAM_CMD_REQUIRED);
+        emitInstallError(error.message);
+        return reject(error);
       }
       steamCMD.start(app, installArgs(app));
+      steamCMD.instance.on('error', (error) => {
+        emitInstallError(MSG_FAILED_INSTALLING);
+        return reject(error);
+      });
       steamCMD.instance.on('exit', (code: number) => {
         if (code !== 0) {
-          return reject(code);
+          const error = new DependencyInstallError(MSG_FAILED_INSTALLING);
+          emitInstallError(error.message);
+          return reject(error);
         } else {
           return resolve();
         }

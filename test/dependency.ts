@@ -6,6 +6,7 @@ import assert from 'node:assert';
 import log, { cycleTestLogs } from '../src/backend/log';
 import * as steamCMD from '../src/backend/dependencies/steamCMD';
 import * as omniSharp from '../src/backend/dependencies/omniSharp';
+import * as oxideRust from '../src/backend/dependencies/oxide.rust';
 import * as rustDedicated from '../src/backend/dependencies/rustDedicated';
 import { DependencyEvent, emitter } from '../src/backend/dependencies/dependency';
 
@@ -37,7 +38,7 @@ test('dependencies', async (root) => {
     assert(capturedEvents.includes(omniSharp.MSG_EXTRACTING));
   });
 
-  await test('installing SteamCMD and RustDedicated', async () => {
+  await test('installing SteamCMD, RustDedicated, and Oxide.Rust', async () => {
     assert(!await steamCMD.isInstalled(mockApp));
 
     const capturedEvents: string[] = [];
@@ -53,6 +54,10 @@ test('dependencies', async (root) => {
 
     assert(!await rustDedicated.isInstalled(mockApp));
     await rustDedicated.install(mockApp);
+    assert(await rustDedicated.isInstalled(mockApp));
+    assert(!await oxideRust.isInstalled(mockApp));
+    await oxideRust.install(mockApp);
+    assert(await oxideRust.isInstalled(mockApp));
   });
 });
 

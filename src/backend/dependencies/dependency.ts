@@ -7,6 +7,8 @@ export const emitter = new EventEmitter();
 export enum DependencyName {
   OmniSharp = 'OmniSharp',
   SteamCMD = 'SteamCMD',
+  OxideRust = 'Oxide',
+  RustDedicated = 'RustDedicated',
 };
 
 export enum EventKind {
