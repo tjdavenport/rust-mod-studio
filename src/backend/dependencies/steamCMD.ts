@@ -1,11 +1,12 @@
 import tar from 'tar';
-import log from '../log';
 import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
 import { join } from 'node:path';
 import * as cp from 'child_process';
-import { DependencyEvent, DependencyName, EventKind, emitter, logProcess } from './dependency';
+import log, { logProcess } from '../log';
+import { DependencyName } from '../../shared';
+import { emitInstallError, emitInstallProgress } from './events';
 
 const platformURL = new Map<string, string>();
 platformURL.set(
@@ -17,23 +18,6 @@ export const MSG_DOWNLOADING = 'Downloading SteamCMD';
 export const MSG_EXTRACTING = 'Extracting SteamCMD';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download SteamCMD';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract SteamCMD';
-
-const emitInstallError = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.SteamCMD,
-    kind: EventKind.InstallError,
-    msg
-  };
-  emitter.emit('error', event);
-};
-const emitInstallProgress = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.SteamCMD,
-    kind: EventKind.InstallProgress,
-    msg,
-  };
-  emitter.emit('progress', event);
-};
 
 export let instance: null | cp.ChildProcess = null;
 
@@ -91,22 +75,22 @@ export const install = (app: Electron.App) => {
       const installPath = getInstallPath(app);
       const downloadURL = platformURL.get(process.platform);
       const response = await fetch(downloadURL);
-      emitInstallProgress(MSG_DOWNLOADING);
-      const emitResponseError = () => emitInstallError(MSG_FAILED_DOWNLOADING);
+      emitInstallProgress(DependencyName.OmniSharp, MSG_DOWNLOADING);
+      const emitResponseError = () => emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
 
       if (response.ok) {
         await fsx.ensureDir(installPath);
         const extractStream = tar.x({ cwd: installPath });
 
         response.body.pipe(extractStream);
-        emitInstallProgress(MSG_EXTRACTING);
+        emitInstallProgress(DependencyName.OmniSharp, MSG_EXTRACTING);
         response.body.on('error', (error) => {
           emitResponseError();
           return reject(error);
         });
 
         extractStream.on('error', (error) => {
-          emitInstallError(MSG_FAILED_EXTRACTING);
+          emitInstallError(DependencyName.OmniSharp, MSG_FAILED_EXTRACTING);
           return reject(error);
         });
         extractStream.on('close', () => {

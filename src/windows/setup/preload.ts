@@ -1,13 +1,31 @@
-import { DependencyState } from '../../shared';
 import { ipcRenderer, contextBridge } from 'electron';
+import { DependencyState, DependencyEvent } from '../../shared';
 
 interface DepsApi {
-  getState: () => Promise<DependencyState>;
+  ensureInstalled: () => Promise<boolean>;
+  onProgress: (callback: (event: DependencyEvent) => void) => () => void;
+  onError: (callback: (event: DependencyEvent) => void) => () => void;
 }
 
 const deps: DepsApi = {
-  getState: () => {
-    return ipcRenderer.invoke('deps-get-state');
+  ensureInstalled: () => {
+    return ipcRenderer.invoke('dependency-ensure-installed');
+  },
+  onProgress: (callback) => {
+    const handleProgress = (event: Electron.IpcRendererEvent, forwardedEvent: DependencyEvent) => {
+      callback(forwardedEvent);
+    };
+    ipcRenderer.on('dependency-progress', handleProgress);
+
+    return () => ipcRenderer.off('dependency-progress', handleProgress);
+  },
+  onError: (callback) => {
+    const handleProgress = (event: Electron.IpcRendererEvent, forwardedEvent: DependencyEvent) => {
+      callback(forwardedEvent);
+    };
+    ipcRenderer.on('dependency-progress', handleProgress);
+
+    return () => ipcRenderer.off('dependency-progress', handleProgress);
   },
 };
 

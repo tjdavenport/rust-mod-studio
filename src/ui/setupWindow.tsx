@@ -1,11 +1,36 @@
+import { useEffect, useState } from 'react';
+import { DependencyEvent } from '../shared';
 import { createRoot } from 'react-dom/client';
-import { useDependencyState } from './hooks/dependencies';
 
 const App = () => {
-  const { dependencyState, loadState } = useDependencyState();
+  const [currentProgress, setCurrentProgress] = useState<DependencyEvent | null>(null);
+  const [currentError, setCurrentError] = useState<DependencyEvent | null>(null);
+
+  useEffect(() => {
+    const disposeProgress = window.deps.onProgress((event) => {
+      setCurrentProgress(event);
+    });
+    const disposeError = window.deps.onError((event) => {
+      setCurrentError(event);
+    });
+
+    window.deps.ensureInstalled()
+      .then((completed) => {
+        // @TODO - handle completion or incompletion
+      });
+
+    return () => {
+      disposeProgress();
+      disposeError();
+    };
+  }, []);
 
   return (
-    <div>{JSON.stringify(dependencyState)}</div>
+    <div>
+      {currentProgress?.msg}
+      <br/>
+      {currentError?.msg}
+    </div>
   );
 };
 

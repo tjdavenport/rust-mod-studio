@@ -1,4 +1,3 @@
-import log from '../log';
 import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
@@ -6,15 +5,17 @@ import * as path from '../path';
 // @TODO consider & investigate removing unzipper
 import unzipper from 'unzipper';
 import { join } from 'node:path';
+import { emitter } from './events';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
+import log, { logProcess } from '../log';
 import * as rpc from 'vscode-jsonrpc/node';
-import { DependencyEvent, DependencyName, EventKind, emitter, logProcess } from './dependency';
 import {
   InitializeParams,
   InitializeRequest,
   ClientCapabilities,
 } from 'vscode-languageserver-protocol';
+import { DependencyEvent, DependencyName, EventKind } from '../../shared';
 
 const platformArchURL = new Map<string, string>();
 platformArchURL.set(

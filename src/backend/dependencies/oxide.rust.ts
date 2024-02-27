@@ -4,9 +4,10 @@ import xml2js from 'xml2js';
 import fetch from 'node-fetch';
 import unzipper from 'unzipper';
 import { join } from 'node:path';
+import { DependencyName } from '../../shared';
 import * as rustDedicated from './rustDedicated';
 import { DependencyInstallError } from '../error';
-import { DependencyEvent, DependencyName, EventKind, emitter } from './dependency';
+import { emitInstallError, emitInstallProgress } from './events';
 
 const platformURL = new Map<string, string>();
 // darwin will use linux builds because OSX isn't supported
@@ -21,23 +22,6 @@ export const MSG_RUST_DEDICATED_REQUIRED = 'Cannot install Oxide without Rust De
 export const MSG_FAILED_DOWNLOADING = 'Failed to download Oxide';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract Oxide';
 export const MSG_FAILED_CREATING_PROJECT_FILE = 'Failed to create c# project file';
-
-const emitInstallError = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.OxideRust,
-    kind: EventKind.InstallError,
-    msg
-  };
-  emitter.emit('error', event);
-};
-const emitInstallProgress = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.OxideRust,
-    kind: EventKind.InstallProgress,
-    msg,
-  };
-  emitter.emit('progress', event);
-};
 
 const projectFilePath = (app: Electron.App) => {
   const rustDedicatedInstallPath = rustDedicated.getInstallPath(app);
@@ -94,38 +78,38 @@ export const getInstallPath = (app: Electron.App) => {
   return join(rustDedicatedInstallPath, 'RustDedicated_Data', 'Managed');
 };
 
-const emitResponseError = () => emitInstallError(MSG_FAILED_DOWNLOADING);
+const emitResponseError = () => emitInstallError(DependencyName.OxideRust, MSG_FAILED_DOWNLOADING);
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     try {
       if (!await rustDedicated.isInstalled(app)) {
         const error = new DependencyInstallError(MSG_RUST_DEDICATED_REQUIRED);
-        emitInstallError(error.message);
+        emitInstallError(DependencyName.OxideRust, error.message);
         return reject(error);
       }
 
       const downloadURL = platformURL.get(process.platform) ?? platformURL.get('linux');
       const response = await fetch(downloadURL);
-      emitInstallProgress(MSG_DOWNLOADING);
+      emitInstallProgress(DependencyName.OxideRust, MSG_DOWNLOADING);
 
       if (response.ok) {
         await fsx.ensureDir(getInstallPath(app));
-        const extractStream = unzipper.Extract({ path: getInstallPath(app) });
+        const extractStream = unzipper.Extract({ path: rustDedicated.getInstallPath(app) });
 
         response.body.pipe(extractStream);
-        emitInstallProgress(MSG_EXTRACTING);
+        emitInstallProgress(DependencyName.OxideRust, MSG_EXTRACTING);
         response.body.on('error', (error) => {
           emitResponseError();
           return reject(error);
         });
 
         extractStream.on('error', (error) => {
-          emitInstallError(MSG_FAILED_EXTRACTING);
+          emitInstallError(DependencyName.OxideRust, MSG_FAILED_EXTRACTING);
           return reject(error);
         });
         extractStream.on('close', async () => {
           try {
-            emitInstallProgress(MSG_CREATING_PROJECT_FILE);
+            emitInstallProgress(DependencyName.OxideRust, MSG_CREATING_PROJECT_FILE);
             const referenceDLLFilenames = await readReferenceDLLFilenames(app);
             const projectFile = buildProjectFile(referenceDLLFilenames);
             await fsx.ensureDir(projectFilePath(app));
@@ -135,7 +119,7 @@ export const install = (app: Electron.App) => {
             );
             return resolve();
           } catch (error) {
-            emitInstallError(MSG_FAILED_CREATING_PROJECT_FILE);
+            emitInstallError(DependencyName.OxideRust, MSG_FAILED_CREATING_PROJECT_FILE);
             return reject(error);
           }
         });

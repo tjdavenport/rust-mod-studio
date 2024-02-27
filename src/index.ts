@@ -39,21 +39,24 @@ const createSetupWindow = () => {
 
   setupWindow.loadURL(SETUP_WINDOW_WEBPACK_ENTRY);
   setupWindow.webContents.openDevTools();
+  deps.bindWindow(setupWindow);
 
   return setupWindow;
 };
 
 Menu.setApplicationMenu(applicationMenu);
 app.whenReady().then(() => {
-  deps.bindIpcMain();
+  deps.bindIpcMain(app);
 
-  deps.omniSharp.app = app;
+  deps.depsInstalled(app)
+    .then((installed) => {
+      if (installed) {
+      } else {
+        createSetupWindow();
+      }
+    }).catch((error) => {
 
-  deps.omniSharp.isInstalled().then((result) => {
-    if (!result) {
-      createSetupWindow();
-    }
-  });
+    });
 
   /*const jsonRpcConnection = omniSharp.start();
   const initialWindow = createMainWindow();
