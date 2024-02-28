@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
+/* @ts-ignore */
+import hammer from './images/hammer.png';
 import { DependencyEvent } from '../shared';
 import { createRoot } from 'react-dom/client';
+import BarLoader from 'react-spinners/BarLoader';
+import { useEffect, useState, CSSProperties } from 'react';
+
+const barLoaderOverride: CSSProperties = {
+  width: '100vw',
+};
 
 const App = () => {
   const [currentProgress, setCurrentProgress] = useState<DependencyEvent | null>(null);
@@ -16,8 +23,10 @@ const App = () => {
 
     window.deps.ensureInstalled()
       .then((completed) => {
-        // @TODO - handle completion or incompletion
-      });
+        window.deps.setupComplete();
+      }).catch(error => {
+        // @TODO
+      })
 
     return () => {
       disposeProgress();
@@ -26,10 +35,22 @@ const App = () => {
   }, []);
 
   return (
-    <div>
-      {currentProgress?.msg}
-      <br/>
-      {currentError?.msg}
+    <div style={{ backgroundImage: `url(${hammer})`, height: '100vh', width: '100vw', backgroundSize: 'cover', position: 'relative' }}>
+      <div style={{ position: 'absolute', bottom: '0px' }}>
+        {currentError ? (
+          <div style={{ padding: '6px 8px' }}><p>{currentError?.msg}</p></div>
+        ) : (
+          <div style={{ padding: '6px 8px' }}><p>{currentProgress?.msg}</p></div>
+        )}
+        <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
+          <BarLoader color="#a6e22e" height="6" cssOverride={barLoaderOverride}/>
+          <div style={{ padding: '10px 8px' }}>
+            <h5 style={{ marginBottom: '4px' }}>Initial Setup</h5>
+            <small>Please wait while Rust Mod Studio prepares to run for the first time.</small>
+            {currentError?.msg}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

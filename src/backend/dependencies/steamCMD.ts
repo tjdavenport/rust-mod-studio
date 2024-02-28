@@ -16,6 +16,7 @@ platformURL.set(
 
 export const MSG_DOWNLOADING = 'Downloading SteamCMD';
 export const MSG_EXTRACTING = 'Extracting SteamCMD';
+export const MSG_INSTALLING = 'Installing SteamCMD';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download SteamCMD';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract SteamCMD';
 
@@ -75,27 +76,28 @@ export const install = (app: Electron.App) => {
       const installPath = getInstallPath(app);
       const downloadURL = platformURL.get(process.platform);
       const response = await fetch(downloadURL);
-      emitInstallProgress(DependencyName.OmniSharp, MSG_DOWNLOADING);
-      const emitResponseError = () => emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
+      emitInstallProgress(DependencyName.SteamCMD, MSG_DOWNLOADING);
+      const emitResponseError = () => emitInstallError(DependencyName.SteamCMD, MSG_FAILED_DOWNLOADING);
 
       if (response.ok) {
         await fsx.ensureDir(installPath);
         const extractStream = tar.x({ cwd: installPath });
 
         response.body.pipe(extractStream);
-        emitInstallProgress(DependencyName.OmniSharp, MSG_EXTRACTING);
+        emitInstallProgress(DependencyName.SteamCMD, MSG_EXTRACTING);
         response.body.on('error', (error) => {
           emitResponseError();
           return reject(error);
         });
 
         extractStream.on('error', (error) => {
-          emitInstallError(DependencyName.OmniSharp, MSG_FAILED_EXTRACTING);
+          emitInstallError(DependencyName.SteamCMD, MSG_FAILED_EXTRACTING);
           return reject(error);
         });
         extractStream.on('close', () => {
           // SteamCMD will update itself on the first start
           start(app, installArgs());
+          emitInstallProgress(DependencyName.SteamCMD, MSG_INSTALLING)
           instance.on('exit', (code: number) => {
             if (code !== 0) {
               return reject(code);

@@ -1,26 +1,26 @@
 import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
-// may be possible to rely on tar module,
-// @TODO consider & investigate removing unzipper
-import unzipper from 'unzipper';
 import { join } from 'node:path';
-import { emitter } from './events';
+import { Writable } from 'stream';
+import decompress from 'decompress';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
 import log, { logProcess } from '../log';
+import { finished } from 'stream/promises';
 import * as rpc from 'vscode-jsonrpc/node';
 import {
   InitializeParams,
   InitializeRequest,
   ClientCapabilities,
 } from 'vscode-languageserver-protocol';
-import { DependencyEvent, DependencyName, EventKind } from '../../shared';
+import { DependencyName } from '../../shared';
+import { emitInstallError, emitInstallProgress } from './events';
 
 const platformArchURL = new Map<string, string>();
 platformArchURL.set(
   'darwin-arm64',
-  'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.10/omnisharp-osx-arm64-net6.0.zip'
+  'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.9/omnisharp-osx-arm64-net6.0.zip'
 );
 
 const getOmniSharpOptions = (projectPath: string): string[] => {
@@ -36,23 +36,6 @@ export const MSG_DOWNLOADING = 'Downloading OmniSharp';
 export const MSG_EXTRACTING = 'Extracting OmniSharp';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download OmniSharp';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract OmniSharp';
-
-const emitInstallError = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.OmniSharp,
-    kind: EventKind.InstallError,
-    msg
-  };
-  emitter.emit('error', event);
-};
-const emitInstallProgress = (msg: string) => {
-  const event: DependencyEvent = {
-    name: DependencyName.OmniSharp,
-    kind: EventKind.InstallProgress,
-    msg,
-  };
-  emitter.emit('progress', event);
-};
 
 let instance: null | cp.ChildProcess = null;
 
@@ -144,33 +127,37 @@ export const install = (app: Electron.App) => {
     try {
       const downloadURL = platformArchURL.get(`${process.platform}-${process.arch}`);
       const response = await fetch(downloadURL);
-      emitInstallProgress(MSG_DOWNLOADING);
-      const emitResponseError = () => emitInstallError(MSG_FAILED_DOWNLOADING);
+      emitInstallProgress(DependencyName.OmniSharp, MSG_DOWNLOADING);
+      const emitResponseError = () => emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
 
       if (response.ok) {
         await fsx.ensureDir(getInstallPath(app));
-        const extractStream = unzipper.Extract({ path: getInstallPath(app) });
+        await fsx.ensureDir(path.artifactDir(app));
 
-        response.body.pipe(extractStream);
-        emitInstallProgress(MSG_EXTRACTING);
-        response.body.on('error', (error) => {
-          emitResponseError();
-          return reject(error);
+        const zipPath = join(path.artifactDir(app), 'omnisharp.zip');
+        const writeZip = fsx.createWriteStream(zipPath, {
+          flags: 'wx'
         });
 
-        extractStream.on('error', (error) => {
-          emitInstallError(MSG_FAILED_EXTRACTING);
-          return reject(error);
+        await finished(response.body.pipe(writeZip));
+        emitInstallProgress(DependencyName.OmniSharp, MSG_EXTRACTING);
+        await decompress(zipPath, getInstallPath(app), {
+          map: (file) => {
+            if (file.type === 'file' && file.path.endsWith('/')) {
+              file.type = 'directory'
+            }
+            return file
+          },
         });
-        extractStream.on('close', () => {
-          return resolve();
-        });
+        await fsx.chmod(join(getInstallPath(app), getStartFilename()), '777');
+        return resolve();
       } else {
         emitResponseError();
         return reject(new Error('download response not ok'));
       }
-
     } catch (error) {
+      log.error(error);
+      emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
       return reject(error);
     }
   });

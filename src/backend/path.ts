@@ -5,6 +5,11 @@ const platform = process.platform;
 const isWindows = platform === 'win32';
 const isOSX = platform === 'darwin';
 
+export const artifactDir = (app: Electron.App) => {
+  const rootPath = getRootDir(app);
+  return path.join(rootPath, 'artifacts');
+};
+
 export const getRootDir = (app: Electron.App) => {
   if (isWindows) {
     return path.join(app.getPath('appData'), 'rust-mod-studio');
@@ -20,7 +25,7 @@ export const getRootDir = (app: Electron.App) => {
 };
 
 export const csharpProjectDir = (app: Electron.App) => {
-  return path.join(getRootDir(app), 'project');
+  return path.join(getRootDir(app), 'rustdedicated', 'oxide', 'plugins');
 };
 
 export const csharpProjectFile = (app: Electron.App, filename: string) => {

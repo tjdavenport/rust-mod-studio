@@ -2,8 +2,10 @@ import log from '../log';
 import fsx from 'fs-extra';
 import xml2js from 'xml2js';
 import fetch from 'node-fetch';
-import unzipper from 'unzipper';
+import * as path from '../path';
 import { join } from 'node:path';
+import decompress from 'decompress';
+import { finished } from 'stream/promises';
 import { DependencyName } from '../../shared';
 import * as rustDedicated from './rustDedicated';
 import { DependencyInstallError } from '../error';
@@ -18,6 +20,7 @@ platformURL.set('linux', 'https://umod.org/games/rust/download/develop');
 export const MSG_DOWNLOADING = 'Downloading Oxide';
 export const MSG_EXTRACTING = 'Extracting Oxide';
 export const MSG_CREATING_PROJECT_FILE = 'Creating c# project file';
+export const MSG_COMPLETE = 'Setup complete';
 export const MSG_RUST_DEDICATED_REQUIRED = 'Cannot install Oxide without Rust Dedicated';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download Oxide';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract Oxide';
@@ -51,14 +54,11 @@ const buildProjectFile = (referenceDLLFilenames: string[]) => {
 
   return builder.buildObject({
     Project: {
-      Import: {
-        $: { Project: 'Sdk.props', Sdk: 'Microsoft.NET.Sdk' }
-      },
       PropertyGroup: {
         Version: { _: '1.0.0' },
         AssemblyName: { _: 'RustModStudioProject' },
         Description: { _: 'RustModStudio Plugins' },
-        TargetFramework: { _: 'net48' },
+        TargetFramework: { _: 'net6' },
         DefinedConstants: { _: 'RUST' },
         OutputPath: { _: '..\\..\\bin\\' },
         IsPackable: { _: 'false' },
@@ -66,8 +66,13 @@ const buildProjectFile = (referenceDLLFilenames: string[]) => {
         AssemblySearchPaths: { _: '../../RustDedicated_Data/Managed/;$(AssemblySearchPaths)' },
         ReferencePaths: { _: '../../RustDedicated_Data/Managed/;$(ReferencePaths)' }
       },
+      Import : [
+        { $: { Project: 'Sdk.props', Sdk: 'Microsoft.NET.Sdk' } },
+        { $: { Project: 'Sdk.targets', Sdk: 'Microsoft.NET.Sdk' } }
+      ],
       ItemGroup: {
-        Reference: references
+        // prevent type forwarder for type 'System.Object' in assembly 'System.Runtime' causing a cycle
+        Reference: references.filter(reference => reference.$.Include !== 'System.Runtime')
       },
     }
   });
@@ -94,35 +99,34 @@ export const install = (app: Electron.App) => {
 
       if (response.ok) {
         await fsx.ensureDir(getInstallPath(app));
-        const extractStream = unzipper.Extract({ path: rustDedicated.getInstallPath(app) });
+        await fsx.ensureDir(path.artifactDir(app));
 
-        response.body.pipe(extractStream);
+        const zipPath = join(path.artifactDir(app), 'oxiderust.zip');
+        const writeZip = fsx.createWriteStream(zipPath, {
+          flags: 'wx'
+        });
+
+        await finished(response.body.pipe(writeZip));
         emitInstallProgress(DependencyName.OxideRust, MSG_EXTRACTING);
-        response.body.on('error', (error) => {
-          emitResponseError();
-          return reject(error);
+        await decompress(zipPath, rustDedicated.getInstallPath(app), {
+          map: (file) => {
+            if (file.type === 'file' && file.path.endsWith('/')) {
+              file.type = 'directory'
+            }
+            return file
+          },
         });
 
-        extractStream.on('error', (error) => {
-          emitInstallError(DependencyName.OxideRust, MSG_FAILED_EXTRACTING);
-          return reject(error);
-        });
-        extractStream.on('close', async () => {
-          try {
-            emitInstallProgress(DependencyName.OxideRust, MSG_CREATING_PROJECT_FILE);
-            const referenceDLLFilenames = await readReferenceDLLFilenames(app);
-            const projectFile = buildProjectFile(referenceDLLFilenames);
-            await fsx.ensureDir(projectFilePath(app));
-            await fsx.writeFile(
-              join(projectFilePath(app), projectFileFilename()),
-              projectFile
-            );
-            return resolve();
-          } catch (error) {
-            emitInstallError(DependencyName.OxideRust, MSG_FAILED_CREATING_PROJECT_FILE);
-            return reject(error);
-          }
-        });
+        emitInstallProgress(DependencyName.OxideRust, MSG_CREATING_PROJECT_FILE);
+        const referenceDLLFilenames = await readReferenceDLLFilenames(app);
+        const projectFile = buildProjectFile(referenceDLLFilenames);
+        await fsx.ensureDir(projectFilePath(app));
+        await fsx.writeFile(
+          join(projectFilePath(app), projectFileFilename()),
+          projectFile
+        );
+        emitInstallProgress(DependencyName.OxideRust, MSG_COMPLETE);
+        return resolve();
       } else {
         emitResponseError();
         return reject(new DependencyInstallError(MSG_FAILED_DOWNLOADING));

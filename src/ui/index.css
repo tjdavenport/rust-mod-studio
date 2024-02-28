@@ -70,6 +70,12 @@ h3 {
 h4, .h4 {
   font-size: 1.5rem;
 }
+h5, .h5 {
+  font-size: 1.2rem;
+}
+small {
+  font-size: 0.75rem;
+}
 
 .bg-dark-grey {
   background-color: #1a1a16;

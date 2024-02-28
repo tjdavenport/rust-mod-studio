@@ -1,7 +1,10 @@
+import log from './backend/log';
 import * as fs from './backend/fs';
 import * as lsp from './backend/lsp';
-import { applicationMenu } from './backend/menu';
 import * as deps from './backend/dependencies';
+import { applicationMenu } from './backend/menu';
+import * as omniSharp from './backend/dependencies/omniSharp';
+import { ProtocolConnection } from 'vscode-languageserver-protocol';
 import { app, BrowserWindow, ipcMain, shell, Menu } from 'electron';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -13,7 +16,9 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const createMainWindow = () => {
+let jsonRpcConnection: ProtocolConnection | null = null;
+
+const createMainWindow = (connection: ProtocolConnection) => {
   const mainWindow = new BrowserWindow({
     height: 600,
     width: 800,
@@ -24,14 +29,15 @@ const createMainWindow = () => {
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   mainWindow.webContents.openDevTools();
+  lsp.bindWindow(connection, mainWindow);
 
   return mainWindow;
 };
 
 const createSetupWindow = () => {
   const setupWindow = new BrowserWindow({
-    height: 600,
-    width: 800,
+    height: 341,
+    width: 341,
     webPreferences: {
       preload: SETUP_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
@@ -47,33 +53,36 @@ const createSetupWindow = () => {
 Menu.setApplicationMenu(applicationMenu);
 app.whenReady().then(() => {
   deps.bindIpcMain(app);
+  fs.bindIpcMain(app);
 
   deps.depsInstalled(app)
     .then((installed) => {
       if (installed) {
+        jsonRpcConnection = omniSharp.start(app);
+        lsp.bindIpcMain(jsonRpcConnection);
+        createMainWindow(jsonRpcConnection);
       } else {
-        createSetupWindow();
+        const setupWindow = createSetupWindow();
+        ipcMain.once('setup-complete', () => {
+          jsonRpcConnection = omniSharp.start(app);
+          lsp.bindIpcMain(jsonRpcConnection);
+          setupWindow.close();
+          createMainWindow(jsonRpcConnection);
+        });
       }
     }).catch((error) => {
-
+      log.error(error);
     });
-
-  /*const jsonRpcConnection = omniSharp.start();
-  const initialWindow = createMainWindow();
-
-  lsp.bindIpcMain(jsonRpcConnection);
-  lsp.bindWindow(jsonRpcConnection, initialWindow);
-  fs.bindIpcMain(app);
 
   ipcMain.on('open-browser-url', (event, url) => {
     shell.openExternal(url);
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
+    if (BrowserWindow.getAllWindows().length === 0 && jsonRpcConnection) {
+      createMainWindow(jsonRpcConnection);
     }
-  });*/
+  });
 });
 
 app.on('window-all-closed', () => {

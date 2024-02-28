@@ -3,12 +3,13 @@ import test from 'node:test';
 import { App } from 'electron';
 import { join } from 'node:path';
 import assert from 'node:assert';
+import { DependencyEvent } from '../src/shared';
 import log, { cycleTestLogs } from '../src/backend/log';
+import { emitter } from '../src/backend/dependencies/events';
 import * as steamCMD from '../src/backend/dependencies/steamCMD';
 import * as omniSharp from '../src/backend/dependencies/omniSharp';
 import * as oxideRust from '../src/backend/dependencies/oxide.rust';
 import * as rustDedicated from '../src/backend/dependencies/rustDedicated';
-import { DependencyEvent, emitter } from '../src/backend/dependencies/dependency';
 
 const mockedAppPath = join(__dirname, 'tmp', 'installed');
 const mockApp = {
