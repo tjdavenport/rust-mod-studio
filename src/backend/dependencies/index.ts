@@ -20,7 +20,7 @@ export const depsInstalled = async (app: Electron.App) => {
 
 export const ensureInstalled = async (app: Electron.App) => {
   const dependencies = [
-    omniSharp, steamCMD, rustDedicated, oxideRust
+    omniSharp, steamCMD, /*rustDedicated, oxideRust*/
   ];
 
   for (const dependency of dependencies) {

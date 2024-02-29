@@ -22,6 +22,10 @@ platformArchURL.set(
   'darwin-arm64',
   'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.9/omnisharp-osx-arm64-net6.0.zip'
 );
+platformArchURL.set(
+  'win32-x64',
+  'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.10/omnisharp-win-x64-net6.0.zip'
+);
 
 const getOmniSharpOptions = (projectPath: string): string[] => {
   return [
@@ -44,6 +48,9 @@ export const getInstallPath = (app: Electron.App) => {
 };
 
 export const getStartFilename = () => {
+  if (process.platform === 'win32') {
+    return './OmniSharp.exe'
+  }
   return './OmniSharp';
 };
 

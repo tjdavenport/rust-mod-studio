@@ -7,6 +7,15 @@ import * as omniSharp from './backend/dependencies/omniSharp';
 import { ProtocolConnection } from 'vscode-languageserver-protocol';
 import { app, BrowserWindow, ipcMain, shell, Menu } from 'electron';
 
+app.commandLine.appendSwitch('no-sandbox')
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-software-rasterizer')
+app.commandLine.appendSwitch('disable-gpu-compositing')
+app.commandLine.appendSwitch('disable-gpu-rasterization')
+app.commandLine.appendSwitch('disable-gpu-sandbox')
+app.commandLine.appendSwitch('--no-sandbox')
+app.disableHardwareAcceleration();
+
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const SETUP_WINDOW_WEBPACK_ENTRY: string;

@@ -23,7 +23,9 @@ const App = () => {
 
     window.deps.ensureInstalled()
       .then((completed) => {
-        window.deps.setupComplete();
+        if (completed) {
+          window.deps.setupComplete();
+        }
       }).catch(error => {
         // @TODO
       })
@@ -43,11 +45,16 @@ const App = () => {
           <div style={{ padding: '6px 8px' }}><p>{currentProgress?.msg}</p></div>
         )}
         <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
-          <BarLoader color="#a6e22e" height="6" cssOverride={barLoaderOverride}/>
+          {!currentError && <BarLoader color="#a6e22e" height="6" cssOverride={barLoaderOverride}/>}
           <div style={{ padding: '10px 8px' }}>
-            <h5 style={{ marginBottom: '4px' }}>Initial Setup</h5>
-            <small>Please wait while Rust Mod Studio prepares to run for the first time.</small>
-            {currentError?.msg}
+            <h5 style={{ marginBottom: '4px' }}>
+              {currentError ? (
+                <span>{'Initial Setup Failed'}</span>
+              ) : (
+                <span>{'Initial Setup'}</span>
+              )}
+            </h5>
+            <small>Create an issue on the Github repo for support</small>
           </div>
         </div>
       </div>
