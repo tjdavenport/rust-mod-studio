@@ -1,6 +1,6 @@
 {
-  "name": "Rust Mod Studio",
-  "productName": "Rust Mod Studio",
+  "name": "rust-mod-studio",
+  "productName": "rust-mod-studio",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".webpack/main",
@@ -11,7 +11,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "test": "NODE_ENV=test tsx --test"
+    "test": "tsx --test"
   },
   "keywords": [],
   "author": {

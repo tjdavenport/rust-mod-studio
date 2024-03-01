@@ -59,15 +59,17 @@ export const start = (app: Electron.App) => {
     return;
   }
 
+  const env = { ...process.env };
+  if (process.platform === 'darwin') {
+    env.DOTNET_ROOT = '/usr/local/share/dotnet';
+  }
+
   instance = cp.spawn(
     getStartFilename(),
     getOmniSharpOptions(path.csharpProjectDir(app)),
     {
       cwd: getInstallPath(app),
-      env: {
-        ...process.env,
-        DOTNET_ROOT: '/usr/local/share/dotnet'
-      }
+      env
     }
   );
 

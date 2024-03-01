@@ -12,10 +12,10 @@ export const artifactDir = (app: Electron.App) => {
 
 export const getRootDir = (app: Electron.App) => {
   if (isWindows) {
-    return path.join(app.getPath('appData'), 'rust-mod-studio');
+    return path.join(app.getPath('appData'), rootDirName);
   }
   if (isOSX) {
-    return path.join(app.getPath('home'), 'Library', 'rust-mod-studio');
+    return path.join(app.getPath('home'), 'Library', rootDirName);
   }
 
   /**

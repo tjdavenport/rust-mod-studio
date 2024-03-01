@@ -25,7 +25,6 @@ const csharpCompletionItemProvider: monaco.languages.CompletionItemProvider = {
       console.error(error);
     }
 
-    debugger;
     return monacoCompletionItem;
   },
   provideCompletionItems: async (model, position, context) => {

@@ -18,7 +18,12 @@ export const getInstallPath = (app: Electron.App) => {
 };
 
 export const getStartFilename = () => {
-  return 'RustDedicated';
+  if (process.platform === 'darwin') {
+    return 'RustDedicated';
+  } else if (process.platform === 'win32') {
+    return 'RustDedicated.exe';
+  }
+
 };
 
 const installArgs = (app: Electron.App) => {

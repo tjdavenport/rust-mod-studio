@@ -1,6 +1,7 @@
 import * as lspBinds from './lsp/binds';
 import { MenuItemId } from '../../shared';
 import * as fsHandlers from './fs/handlers';
+import { PathMatch } from 'react-router-dom';
 import * as lspHandlers from './lsp/handlers';
 import * as lspProviders from './lsp/providers';
 import * as oxideRustCommands from './oxide.rust/commands';
@@ -9,6 +10,18 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 export type MonacoInstance = typeof monaco;
 export type EditorInstance = typeof monaco.editor;
+
+/**
+ * Monaco doesn't properly decode URIs when those URIs contain windows-style
+ * drive prefixes e.g C:/ or Z:/, so a manual fluffy check is needed.
+ */
+export const uriFuzzyEqual = (uriA: string | undefined | null, uriB: string | undefined | null) => {
+  if (typeof uriA !== 'string' || typeof uriB !== 'string') {
+    return false;
+  }
+
+  return decodeURIComponent(uriA).toLowerCase() === decodeURIComponent(uriB).toLowerCase();
+};
 
 export const connectToFs = (monaco: MonacoInstance) => {
   window.appMenu.onClick(MenuItemId.Save, fsHandlers.handleAppMenuSave(monaco));

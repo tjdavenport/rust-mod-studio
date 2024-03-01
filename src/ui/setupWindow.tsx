@@ -54,7 +54,11 @@ const App = () => {
                 <span>{'Initial Setup'}</span>
               )}
             </h5>
-            <small>Create an issue on the Github repo for support</small>
+            {currentError ? (
+              <small>Create an issue on the Github repo for support.</small>
+            ) : (
+              <small>Please wait while Rust Mod Studio prepares to run for the first time.</small>
+            )}
           </div>
         </div>
       </div>

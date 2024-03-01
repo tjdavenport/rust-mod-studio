@@ -1,6 +1,8 @@
 import { MonacoInstance } from '../';
 import { matchPath } from 'react-router-dom';
+import { uriFuzzyEqual } from '../';
 import { MenuClickParams } from '../../../shared';
+
 
 export const handleAppMenuSave = (monaco: MonacoInstance) => (params: MenuClickParams) => {
   if (params.pathname) {
@@ -8,12 +10,12 @@ export const handleAppMenuSave = (monaco: MonacoInstance) => (params: MenuClickP
 
     if (match?.params?.uri) {
       const model = monaco.editor.getModels().find((model) => {
-        return model.uri.toString() === match.params.uri;
+        return uriFuzzyEqual(match.params.uri, model.uri.toString());
       });
 
       if (model) {
         window.fs.writeTextByURI(
-          model.uri.toString(),
+          match.params.uri,
           model.getValue()
         );
       }

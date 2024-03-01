@@ -3,12 +3,13 @@ import {
   PublishDiagnosticsNotification,
   PublishDiagnosticsParams,
 } from 'vscode-languageserver-protocol';
+import { uriFuzzyEqual } from '../';
 import * as converters from './adapter/converters';
 
 export const bindDiagnosticsNotification = (monaco: MonacoInstance) => {
   window.lsp.onNotification<PublishDiagnosticsParams>(PublishDiagnosticsNotification.method, (params) => {
     const model = monaco.editor.getModels().find(model => {
-      return model.uri.toString() === params.uri;
+      return uriFuzzyEqual(params.uri, model.uri.toString());
     });
 
     if (model) {

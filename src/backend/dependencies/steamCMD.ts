@@ -119,7 +119,9 @@ export const install = (app: Electron.App) => {
         start(app, installArgs());
         emitInstallProgress(DependencyName.SteamCMD, MSG_INSTALLING)
         instance.on('exit', (code: number) => {
-          if (code !== 0) {
+          // 7 seems to be related to an error loading intl files on windows.
+          // Unsure if this will be problematic.
+          if (![0, 7].includes(code)) {
             return reject(code);
           } else {
             return resolve();

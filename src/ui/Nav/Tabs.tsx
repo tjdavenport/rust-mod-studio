@@ -2,6 +2,7 @@ import { GoX } from 'react-icons/go';
 import { useCallback, MouseEvent } from 'react';
 import { useLoadedURIs } from '../hooks/monaco';
 import { useMonaco } from '@monaco-editor/react';
+import { uriFuzzyEqual } from '../monaco';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { useNavigate, matchPath, useLocation } from 'react-router-dom';
 
@@ -28,7 +29,7 @@ const Tab = ({ uri, precedingURI }: { uri: monaco.Uri, precedingURI: monaco.Uri 
     monaco.editor.getModel(uri).dispose();
   }, [monaco, precedingURI]);
 
-  const tabClass = `tab ${match?.params?.uri === uri.toString() ? 'bb-blue' : 'bb-light-grey'}`;
+  const tabClass = `tab ${uriFuzzyEqual(match?.params?.uri, uri.toString()) ? 'bb-blue' : 'bb-light-grey'}`;
   return (
     <div className={tabClass}>
       <a className="tab__link" href="#" onClick={handleURIClick}>{uri.toString().split('/').pop()}</a>

@@ -1,3 +1,4 @@
+import { uriFuzzyEqual } from '../';
 import { MonacoInstance } from '../';
 import {
   DidSaveTextDocumentNotification,
@@ -62,13 +63,13 @@ export const handleAppMenuSave = (monaco: MonacoInstance) => (params: MenuClickP
 
     if (match?.params?.uri) {
       const model = monaco.editor.getModels().find((model) => {
-        return model.uri.toString() === match.params.uri;
+        return uriFuzzyEqual(model.uri.toString(), match.params.uri);
       });
 
       if (model) {
         const params: DidSaveTextDocumentParams = {
           textDocument: {
-            uri: model.uri.toString()
+            uri: match.params.uri
           },
           text: model.getValue()
         };
