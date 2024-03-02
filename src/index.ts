@@ -1,6 +1,7 @@
 import log from './backend/log';
 import * as fs from './backend/fs';
 import * as lsp from './backend/lsp';
+import * as system from './backend/system';
 import * as deps from './backend/dependencies';
 import { applicationMenu } from './backend/menu';
 import * as omniSharp from './backend/dependencies/omniSharp';
@@ -53,6 +54,7 @@ const createSetupWindow = () => {
 Menu.setApplicationMenu(applicationMenu);
 app.whenReady().then(() => {
   deps.bindIpcMain(app);
+  system.bindIpcMain();
   fs.bindIpcMain(app);
 
   deps.depsInstalled(app)

@@ -74,7 +74,7 @@ h5, .h5 {
   font-size: 1.2rem;
 }
 small {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
 }
 
 .bg-dark-grey {
@@ -88,6 +88,9 @@ small {
 }
 .bb-off-white {
   border-bottom-color: 2px #f8f8f2 solid;
+}
+.cyan {
+  color: #66d9ef;
 }
 .light-grey {
   color: #787c6a;

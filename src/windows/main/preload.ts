@@ -1,6 +1,10 @@
 import { ipcRenderer, contextBridge } from 'electron';
 import { MenuItemId, MenuClickParams } from '../../shared';
 
+interface SystemApi {
+  getPlatform: () => Promise<string>;
+}
+
 interface LspApi {
   sendRequest: <R>(method: string, params: any) => Promise<R>;
   sendNotification: (method: string, params: any) => void;
@@ -20,6 +24,7 @@ interface AppMenuApi {
 
 declare global {
   interface Window {
+    system: SystemApi,
     lsp: LspApi 
     fs: FsApi
     appMenu: AppMenuApi,
@@ -31,6 +36,12 @@ declare global {
     };
   }
 }
+
+const system: SystemApi = {
+  getPlatform: () => {
+    return ipcRenderer.invoke('system-get-platform');
+  }
+};
 
 const lsp: LspApi = {
   sendRequest: (method: string, params: any) => {
@@ -77,6 +88,8 @@ const appMenu: AppMenuApi = {
   } 
 };
 
+
+contextBridge.exposeInMainWorld('system', system);
 contextBridge.exposeInMainWorld('fs', fs);
 contextBridge.exposeInMainWorld('lsp', lsp);
 contextBridge.exposeInMainWorld('appMenu', appMenu);

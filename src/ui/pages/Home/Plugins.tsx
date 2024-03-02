@@ -1,18 +1,11 @@
+import { Pane } from './components';
 import styled from 'styled-components';
 import { GoPlusCircle } from 'react-icons/go';
 import { useNavigate } from 'react-router-dom';
 import pluginBoilerplate from './pluginBoilerplate';
-import { useCsharpProjectDirURI } from '../hooks/fs';
+import { useCsharpProjectDirURI } from '../../hooks/fs';
 import { MouseEvent, useState, useCallback, useRef, useEffect, FormEvent } from 'react';
 
-const PluginPane = styled.div`
-  box-shadow: 0px 0px 4px 0px #000000;
-  padding: 16px;
-  border-radius: 4px;
-  min-width: 280px;
-  max-width: 50%;
-  overflow-y: scroll;
-`;
 const PluginItem = styled.div`
   margin-bottom: 8px;
   border-radius: 4px;
@@ -20,12 +13,6 @@ const PluginItem = styled.div`
   padding: 8px 4px;
   background: rgb(26,26,22);
   background: linear-gradient(180deg, rgba(26,26,22,1) 0%, rgba(39,40,34,1) 100%);
-`;
-const ButtonWrapper = styled.button`
-  padding: 0px;
-  border: none;
-  background-color: initial;
-  cursor: pointer;
 `;
 const PluginInput = styled.input`
   width: 100%;
@@ -42,21 +29,12 @@ const KeyHelper = styled.div`
   padding: .2rem;
   font-size: .55rem;
 `;
-
-const Plugin = ({ uri }: { uri: string }) => {
-  const navigate = useNavigate();
-  const pluginName = uri.split('/').pop();
-  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    navigate(`/edit/${encodeURIComponent(uri)}`);
-  };
-
-  return (
-    <PluginItem>
-      <a href="#" className="offwhite" onClick={handleClick}>{pluginName}</a>
-    </PluginItem>
-  );
-};
+const ButtonWrapper = styled.button`
+  padding: 0px;
+  border: none;
+  background-color: initial;
+  cursor: pointer;
+`;
 
 type PluginFormProps = {
   cancel: () => void;
@@ -84,20 +62,35 @@ const PluginForm = ({ cancel, onSubmit }: PluginFormProps) => {
   )
 };
 
-interface HomeProps {
-  projectURIs: string[];
-  read: () => void;
+const Plugin = ({ uri }: { uri: string }) => {
+  const navigate = useNavigate();
+  const pluginName = uri.split('/').pop();
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    navigate(`/edit/${encodeURIComponent(uri)}`);
+  };
+
+  return (
+    <PluginItem>
+      <a href="#" className="offwhite" onClick={handleClick}>{pluginName}</a>
+    </PluginItem>
+  );
 };
-const Home = ({ projectURIs, read }: HomeProps) => {
+
+export interface PluginsProps {
+  projectURIs: string[];
+};
+const Plugins = ({ projectURIs }: PluginsProps) => {
+  const navigate = useNavigate();
   const [adding, setAdding] = useState<boolean>(false);
   const csharpProjectDirURI = useCsharpProjectDirURI();
-  const navigate = useNavigate();
   const handleAddClick = useCallback(() => {
     setAdding(!adding);
   }, [setAdding, adding]);
   const notAdding = useCallback(() => {
     setAdding(false);
   }, [setAdding]);
+
   const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const input = event.currentTarget.elements.namedItem('filename') as HTMLInputElement;
@@ -119,33 +112,27 @@ const Home = ({ projectURIs, read }: HomeProps) => {
     }
   }, [projectURIs, csharpProjectDirURI]);
 
-  useEffect(() => {
-    read();
-  }, []);
-
   return (
-    <div style={{ display: 'flex', padding: '12px' }}>
-      <PluginPane className="bg-dark-grey">
-        <div style={{ display: 'flex' }}>
-          <div style={{ flexGrow: 1 }}>
-            <h4 style={{ marginBottom: '12px' }}>My Plugins</h4>
-          </div>
-          <div>
-            <ButtonWrapper onClick={handleAddClick} type="button">
-              <GoPlusCircle className="offwhite" style={{ fontSize: '1.5rem' }}/>
-            </ButtonWrapper>
-          </div>
+    <Pane className="bg-dark-grey">
+      <div style={{ display: 'flex' }}>
+        <div style={{ flexGrow: 1 }}>
+          <h4 style={{ marginBottom: '12px' }}>My Plugins</h4>
         </div>
-        {adding && (
-          <PluginForm cancel={notAdding} onSubmit={handleSubmit}/>
-        )}
-        {projectURIs.map(uri => {
-          return (
-            <Plugin key={`plugin-${uri}`} uri={uri}/>
-          );
-        })}
-      </PluginPane>
-    </div>
+        <div>
+          <ButtonWrapper onClick={handleAddClick} type="button">
+            <GoPlusCircle className="offwhite" style={{ fontSize: '1.5rem' }}/>
+          </ButtonWrapper>
+        </div>
+      </div>
+      {adding && (
+        <PluginForm cancel={notAdding} onSubmit={handleSubmit}/>
+      )}
+      {projectURIs.map(uri => {
+        return (
+          <Plugin key={`plugin-${uri}`} uri={uri}/>
+        );
+      })}
+    </Pane>
   );
 };
 
@@ -159,4 +146,4 @@ const validatePluginName = (filename: string, existingURIs: string[]) => {
   return '';
 };
 
-export default Home;
+export default Plugins;

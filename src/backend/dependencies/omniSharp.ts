@@ -1,8 +1,8 @@
 import fsx from 'fs-extra';
 import fetch from 'node-fetch';
 import * as path from '../path';
+import { promisify } from 'util';
 import { join } from 'node:path';
-import { Writable } from 'stream';
 import decompress from 'decompress';
 import { pathToFileURL } from 'url';
 import * as cp from 'child_process';
@@ -45,6 +45,25 @@ let instance: null | cp.ChildProcess = null;
 
 export const getInstallPath = (app: Electron.App) => {
   return join(path.getRootDir(app), 'omnisharp');
+};
+
+const exec = promisify(cp.exec);
+export const hasDotnet6 = async () => {
+  try {
+    const { stdout } = await exec('dotnet --version');
+    const [ major ] = stdout.split('.');
+
+    if (isNaN(+major)) {
+      return false;
+    }
+
+    if (Number(major) >= 6) {
+      return true;
+    }
+  } catch (error) {
+    log.error(error);
+    return false;
+  }
 };
 
 export const getStartFilename = () => {

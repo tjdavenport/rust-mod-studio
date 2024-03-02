@@ -40,6 +40,9 @@ export const bindIpcMain = (app: Electron.App) => {
       return false;
     }
   });
+  ipcMain.handle('has-dotnet6', async () => {
+    return await omniSharp.hasDotnet6();
+  });
 };
 
 export const bindWindow = (browserWindow: Electron.BrowserWindow) => {
