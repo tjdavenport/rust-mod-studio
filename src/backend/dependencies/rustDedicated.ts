@@ -23,7 +23,6 @@ export const getStartFilename = () => {
   } else if (process.platform === 'win32') {
     return 'RustDedicated.exe';
   }
-
 };
 
 const installArgs = (app: Electron.App) => {

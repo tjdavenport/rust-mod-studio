@@ -9,22 +9,43 @@ import { finished } from 'stream/promises';
 import { DependencyName } from '../../shared';
 import * as rustDedicated from './rustDedicated';
 import { DependencyInstallError } from '../error';
+import { getLatestRepoRelease, TaggedAsset } from '../github';
 import { emitInstallError, emitInstallProgress } from './events';
-
-const platformURL = new Map<string, string>();
-// darwin will use linux builds because OSX isn't supported
-platformURL.set('darwin', 'https://umod.org/games/rust/download/develop');
-platformURL.set('windows', 'https://umod.org/games/rust/download?tag=public');
-platformURL.set('linux', 'https://umod.org/games/rust/download/develop');
 
 export const MSG_DOWNLOADING = 'Downloading Oxide';
 export const MSG_EXTRACTING = 'Extracting Oxide';
 export const MSG_CREATING_PROJECT_FILE = 'Creating c# project file';
 export const MSG_COMPLETE = 'Setup complete';
 export const MSG_RUST_DEDICATED_REQUIRED = 'Cannot install Oxide without Rust Dedicated';
+export const MSG_FAILED_FETCHING_DOWNLOAD_URL = 'Cannot get Oxide.Rust download url';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download Oxide';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract Oxide';
 export const MSG_FAILED_CREATING_PROJECT_FILE = 'Failed to create c# project file';
+
+const getLatestTaggedPlatformAsset = async () => {
+  const release = await getLatestRepoRelease('/repos/OxideMod/Oxide.Rust/releases');
+
+  if (!release) {
+    emitInstallError(DependencyName.OxideRust, MSG_FAILED_FETCHING_DOWNLOAD_URL);
+    throw new DependencyInstallError(MSG_FAILED_FETCHING_DOWNLOAD_URL);
+  }
+
+  if (process.platform === 'win32') {
+    return {
+      asset: release.assets.find(asset => {
+        return !asset.name.includes('linux');
+      }),
+      tag: release.tag_name
+    };
+  }
+
+  return {
+    asset: release.assets.find(asset => {
+      return asset.name.includes('linux');
+    }),
+    tag: release.tag_name,
+  };
+};
 
 const projectFilePath = (app: Electron.App) => {
   const rustDedicatedInstallPath = rustDedicated.getInstallPath(app);
@@ -93,7 +114,13 @@ export const install = (app: Electron.App) => {
         return reject(error);
       }
 
-      const downloadURL = platformURL.get(process.platform) ?? platformURL.get('linux');
+      const taggedAsset = await getLatestTaggedPlatformAsset();
+      if (!taggedAsset.asset) {
+        emitInstallError(DependencyName.OxideRust, MSG_FAILED_FETCHING_DOWNLOAD_URL);
+        return reject(new DependencyInstallError(MSG_FAILED_FETCHING_DOWNLOAD_URL));
+      }
+
+      const downloadURL = taggedAsset.asset.browser_download_url;
       const response = await fetch(downloadURL);
       emitInstallProgress(DependencyName.OxideRust, MSG_DOWNLOADING);
 
@@ -101,7 +128,8 @@ export const install = (app: Electron.App) => {
         await fsx.ensureDir(getInstallPath(app));
         await fsx.ensureDir(path.artifactDir(app));
 
-        const zipPath = join(path.artifactDir(app), 'oxiderust.zip');
+        const zipFilename = `oxide-rust-${taggedAsset.tag}.zip`
+        const zipPath = join(path.artifactDir(app), zipFilename);
         const writeZip = fsx.createWriteStream(zipPath, {
           flags: 'wx'
         });
@@ -133,6 +161,7 @@ export const install = (app: Electron.App) => {
       }
 
     } catch (error) {
+      log.error(error);
       emitResponseError();
       return reject(error);
     }
