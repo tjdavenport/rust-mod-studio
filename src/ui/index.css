@@ -58,6 +58,9 @@ input {
   font-family: Menlo, Monaco, "Courier New", monospace;
 }
 
+p {
+  line-height: 1.4rem;
+}
 h1 {
   font-size: 4rem;
 }
@@ -94,6 +97,15 @@ small {
 }
 .light-grey {
   color: #787c6a;
+}
+.green {
+  color: #a6e22e;
+}
+.yellow {
+  color: #e6db74;
+}
+.cardinal {
+  color: #f92672;
 }
 .offwhite {
   color: #f8f8f2;

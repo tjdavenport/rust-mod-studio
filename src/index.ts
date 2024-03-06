@@ -4,9 +4,9 @@ import * as lsp from './backend/lsp';
 import * as system from './backend/system';
 import * as deps from './backend/dependencies';
 import { applicationMenu } from './backend/menu';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import * as omniSharp from './backend/dependencies/omniSharp';
 import { ProtocolConnection } from 'vscode-languageserver-protocol';
-import { app, BrowserWindow, ipcMain, shell, Menu } from 'electron';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -75,10 +75,6 @@ app.whenReady().then(() => {
     }).catch((error) => {
       log.error(error);
     });
-
-  ipcMain.on('open-browser-url', (event, url) => {
-    shell.openExternal(url);
-  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0 && jsonRpcConnection) {

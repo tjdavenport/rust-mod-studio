@@ -1,46 +1,45 @@
 import { ipcRenderer, contextBridge } from 'electron';
 import { MenuItemId, MenuClickParams } from '../../shared';
 
-interface SystemApi {
+export interface SystemApi {
   getPlatform: () => Promise<string>;
 }
 
-interface LspApi {
+export interface MainDepsApi {
+  getOxideTags: () => Promise<{ latestAsset: string; artifact: string }>;
+  updateOxide: () => Promise<boolean>;
+}
+
+export interface LspApi {
   sendRequest: <R>(method: string, params: any) => Promise<R>;
   sendNotification: (method: string, params: any) => void;
   onNotification: <R>(method: string, callback: (params: R) => void) => void;
 }
 
-interface FsApi {
+export interface FsApi {
   readCsharpProjectDir: () => Promise<string[]>;
   getCsharpProjectDirURI: () => Promise<string>;
   readTextByURI: (url: string) => Promise<string>;
   writeTextByURI: (url: string, contents: string) => Promise<void>;
 }
 
-interface AppMenuApi {
+export interface AppMenuApi {
   onClick: (id: MenuItemId, callback: (params: MenuClickParams) => void) => () => void;
-}
-
-declare global {
-  interface Window {
-    system: SystemApi,
-    lsp: LspApi 
-    fs: FsApi
-    appMenu: AppMenuApi,
-    electronAPI: {
-      hasDotnet: () => Promise<boolean>;
-      hasSteamCmd: () => Promise<boolean>;
-      hasOmniSharp: () => Promise<boolean>;
-      openBrowserUrl: (url: string) => void;
-    };
-  }
 }
 
 const system: SystemApi = {
   getPlatform: () => {
     return ipcRenderer.invoke('system-get-platform');
   }
+};
+
+const deps: MainDepsApi = {
+  getOxideTags: () => {
+    return ipcRenderer.invoke('dependency-get-oxide-tags');
+  },
+  updateOxide: () => {
+    return ipcRenderer.invoke('dependency-update-oxide');
+  },
 };
 
 const lsp: LspApi = {
@@ -88,17 +87,8 @@ const appMenu: AppMenuApi = {
   } 
 };
 
-
 contextBridge.exposeInMainWorld('system', system);
+contextBridge.exposeInMainWorld('mainDeps', deps);
 contextBridge.exposeInMainWorld('fs', fs);
 contextBridge.exposeInMainWorld('lsp', lsp);
 contextBridge.exposeInMainWorld('appMenu', appMenu);
-
-contextBridge.exposeInMainWorld(
-  'electronAPI', {
-    hasDotnet: () => ipcRenderer.invoke('has-dotnet'),
-    hasSteamCmd: () => ipcRenderer.invoke('has-steamcmd'),
-    hasOmniSharp: () => ipcRenderer.invoke('has-omnisharp'),
-    openBrowserUrl: (url: string) => ipcRenderer.send('open-browser-url', url),
-  }
-);

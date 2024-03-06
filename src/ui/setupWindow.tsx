@@ -50,7 +50,7 @@ const dotnetInstallUrl = 'https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 const MissingDotnet = ({ startSetup }: { startSetup: () => Promise<void> }) => {
   const handleDotnetAnchorClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    window.deps.openBrowserUrl(dotnetInstallUrl);
+    window.setupDeps.openBrowserUrl(dotnetInstallUrl);
   }, []);
   const handleRetryClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -88,9 +88,9 @@ const App = () => {
 
   const startSetup = useCallback(async () => {
     try {
-      if (await window.deps.hasDotnet6()) {
-        if (await window.deps.ensureInstalled()) {
-          window.deps.setupComplete();
+      if (await window.setupDeps.hasDotnet6()) {
+        if (await window.setupDeps.ensureInstalled()) {
+          window.setupDeps.setupComplete();
         }
       } else {
         setMissingDotnet(true);
@@ -101,10 +101,10 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const disposeProgress = window.deps.onProgress((event) => {
+    const disposeProgress = window.setupDeps.onProgress((event) => {
       setCurrentProgress(event);
     });
-    const disposeError = window.deps.onError((event) => {
+    const disposeError = window.setupDeps.onError((event) => {
       setCurrentError(event);
     });
 
@@ -139,7 +139,7 @@ const App = () => {
       <div style={{ position: 'absolute', bottom: '0px' }}>
         <div style={{ padding: '6px 8px' }}><p>{currentProgress?.msg}</p></div>
         <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.55)' }}>
-          <BarLoader color="#a6e22e" height="6" cssOverride={barLoaderOverride}/>
+          <BarLoader color="#a6e22e" height="6px" cssOverride={barLoaderOverride}/>
           <div style={{ padding: '10px 8px' }}>
             <h5 style={{ marginBottom: '4px' }}>
               <span>{'Initial Setup'}</span>

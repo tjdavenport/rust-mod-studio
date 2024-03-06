@@ -6,6 +6,11 @@ export type MenuClickParams = {
   pathname?: string;
 };
 
+export type OxideTags = {
+  latestAsset: string;
+  artifact: string;
+};
+
 export enum DependencyName {
   OmniSharp = 'OmniSharp',
   SteamCMD = 'SteamCMD',

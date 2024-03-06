@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import decompress from 'decompress';
 import { finished } from 'stream/promises';
 import { DependencyName } from '../../shared';
+import { getLatestRepoRelease } from '../github';
 import * as rustDedicated from './rustDedicated';
 import { DependencyInstallError } from '../error';
-import { getLatestRepoRelease, TaggedAsset } from '../github';
 import { emitInstallError, emitInstallProgress } from './events';
 
 export const MSG_DOWNLOADING = 'Downloading Oxide';
@@ -22,7 +22,9 @@ export const MSG_FAILED_DOWNLOADING = 'Failed to download Oxide';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract Oxide';
 export const MSG_FAILED_CREATING_PROJECT_FILE = 'Failed to create c# project file';
 
-const getLatestTaggedPlatformAsset = async () => {
+const ARCHIVE_PREFIX = 'oxide-rust-';
+
+export const getLatestTaggedPlatformAsset = async () => {
   const release = await getLatestRepoRelease('/repos/OxideMod/Oxide.Rust/releases');
 
   if (!release) {
@@ -45,6 +47,30 @@ const getLatestTaggedPlatformAsset = async () => {
     }),
     tag: release.tag_name,
   };
+};
+
+export const deleteArtifact = async (app: Electron.App) => {
+  const artifacts = await fsx.readdir(path.artifactDir(app));
+
+  const archiveFilename = artifacts.find(filename => {
+    return filename.includes(ARCHIVE_PREFIX) && filename.includes('.zip');
+  }) ?? '';
+
+  if (!archiveFilename) {
+    return;
+  }
+
+  return await fsx.unlink(join(path.artifactDir(app), archiveFilename));
+};
+
+export const getArtifactTag = async (app: Electron.App) => {
+  const artifacts = await fsx.readdir(path.artifactDir(app));
+
+  const archiveFilename = artifacts.find(filename => {
+    return filename.includes(ARCHIVE_PREFIX) && filename.includes('.zip');
+  }) ?? '';
+
+  return archiveFilename.replace(ARCHIVE_PREFIX, '').replace('.zip', '');
 };
 
 const projectFilePath = (app: Electron.App) => {
@@ -128,7 +154,7 @@ export const install = (app: Electron.App) => {
         await fsx.ensureDir(getInstallPath(app));
         await fsx.ensureDir(path.artifactDir(app));
 
-        const zipFilename = `oxide-rust-${taggedAsset.tag}.zip`
+        const zipFilename = `${ARCHIVE_PREFIX}${taggedAsset.tag}.zip`
         const zipPath = join(path.artifactDir(app), zipFilename);
         const writeZip = fsx.createWriteStream(zipPath, {
           flags: 'wx'

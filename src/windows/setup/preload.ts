@@ -1,7 +1,7 @@
 import { DependencyEvent } from '../../shared';
 import { ipcRenderer, contextBridge } from 'electron';
 
-interface DepsApi {
+export interface SetupDepsApi {
   setupComplete: () => void;
   hasDotnet6: () => Promise<boolean>;
   ensureInstalled: () => Promise<boolean>;
@@ -10,7 +10,7 @@ interface DepsApi {
   openBrowserUrl: (url: string) => void;
 }
 
-const deps: DepsApi = {
+const deps: SetupDepsApi = {
   setupComplete: () => {
     ipcRenderer.send('setup-complete');
   },
@@ -38,11 +38,5 @@ const deps: DepsApi = {
   },
   openBrowserUrl: (url: string) => ipcRenderer.send('open-browser-url', url),
 };
-
-declare global {
-  interface Window {
-    deps: DepsApi
-  }
-}
 
 contextBridge.exposeInMainWorld('deps', deps);

@@ -4,8 +4,8 @@ import { ipcMain } from 'electron';
 import * as steamCMD from './steamCMD';
 import * as omniSharp from './omniSharp';
 import * as oxideRust from './oxide.rust';
-import { DependencyEvent } from '../../shared';
 import * as rustDedicated from './rustDedicated';
+import { DependencyEvent, OxideTags } from '../../shared';
 
 export const depsInstalled = async (app: Electron.App) => {
   const installedChecks = [
@@ -42,6 +42,34 @@ export const bindIpcMain = (app: Electron.App) => {
   });
   ipcMain.handle('has-dotnet6', async () => {
     return await omniSharp.hasDotnet6();
+  });
+  ipcMain.handle('dependency-get-oxide-tags', async (): Promise<OxideTags> => {
+    let latestAsset = '';
+    let artifact = '';
+
+    try {
+      latestAsset = (await oxideRust.getLatestTaggedPlatformAsset()).tag;
+    } catch (error) {
+      log.error(error);
+    }
+
+    try {
+      artifact = await oxideRust.getArtifactTag(app);
+    } catch (error) {
+      log.error(error);
+    }
+
+    return { latestAsset, artifact };
+  });
+  ipcMain.handle('dependency-update-oxide', async () => {
+    try {
+      await oxideRust.deleteArtifact(app);
+      await oxideRust.install(app);
+      return true;
+    } catch (error) {
+      log.error(error);
+      return false;
+    }
   });
 };
 

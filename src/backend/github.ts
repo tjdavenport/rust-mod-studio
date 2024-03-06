@@ -1,4 +1,3 @@
-import log from './log';
 import fetch from 'node-fetch';
 
 /**
@@ -21,9 +20,12 @@ export type TaggedAsset = {
 export const getLatestRepoRelease = async (repoEndpoint: string) => {
   return fetch(`https://api.github.com${repoEndpoint}`)
     .then((response) => {
+      if (!response.ok) {
+        throw Error('could not retrieve latest repo release');
+      }
+
       return response.json();
     }).then((releases: Release[]) => {
-      log.info(JSON.stringify(releases));
       const [ latest ] = releases;
       return latest;
     });

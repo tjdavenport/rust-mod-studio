@@ -1,6 +1,4 @@
 import { useEffect } from 'react';
-import { Pane } from './components';
-import { usePlatform } from '../../hooks/system';
 import Plugins, { PluginsProps } from './Plugins';
 import DevelopmentServer from './DevelopmentServer';
 
@@ -9,7 +7,7 @@ type HomeProps = PluginsProps & {
 }
 
 const Home = ({ projectURIs, read }: HomeProps) => {
-  const platform = usePlatform();
+
   useEffect(() => {
     read();
   }, []);
@@ -17,7 +15,7 @@ const Home = ({ projectURIs, read }: HomeProps) => {
   return (
     <div style={{ display: 'flex', padding: '12px', gap: '14px' }}>
       <Plugins projectURIs={projectURIs}/>
-      <DevelopmentServer platform={platform}/>
+      <DevelopmentServer/>
     </div>
   );
 };
