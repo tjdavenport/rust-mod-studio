@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron';
-import { MenuItemId, MenuClickParams } from '../../shared';
+import { MenuItemId, MenuClickParams, ProcessStatusEvent, ProcessStatus, DependencyName } from '../../shared';
 
 export interface SystemApi {
   getPlatform: () => Promise<string>;
@@ -8,6 +8,12 @@ export interface SystemApi {
 export interface MainDepsApi {
   getOxideTags: () => Promise<{ latestAsset: string; artifact: string }>;
   updateOxide: () => Promise<boolean>;
+  updateRustDedicated: () => Promise<boolean>;
+  startRustDedicated: () => Promise<boolean>;
+  stopRustDedicated: () => Promise<boolean>;
+  getProcessStatus: (name: DependencyName) => Promise<ProcessStatus>;
+  onRustDedicatedStdout: (callback: (outStr: string) => void) => () => void;
+  onProcessStatus: (callback: (event: ProcessStatusEvent) => void) => () => void;
 }
 
 export interface LspApi {
@@ -39,6 +45,34 @@ const deps: MainDepsApi = {
   },
   updateOxide: () => {
     return ipcRenderer.invoke('dependency-update-oxide');
+  },
+  updateRustDedicated: () => {
+    return ipcRenderer.invoke('dependency-update-rust-dedicated');
+  },
+  startRustDedicated: () => {
+    return ipcRenderer.invoke('dependency-start-rust-dedicated');
+  },
+  stopRustDedicated: () => {
+    return ipcRenderer.invoke('dependency-stop-rust-dedicated');
+  },
+  getProcessStatus: (name: DependencyName) => {
+    return ipcRenderer.invoke('dependency-get-status', name);
+  },
+  onRustDedicatedStdout: (callback) => {
+    const handleRustDedicatedStdout = (event: Electron.IpcRendererEvent, outStr: string) => {
+      callback(outStr);
+    };
+    ipcRenderer.on('rust-dedicated-stdout', handleRustDedicatedStdout);
+
+    return () => ipcRenderer.off('rust-dedicated-stdout', handleRustDedicatedStdout);
+  },
+  onProcessStatus: (callback) => {
+    const handleProcessStatus = (event: Electron.IpcRendererEvent, forwardedEvent: ProcessStatusEvent) => {
+      callback(forwardedEvent);
+    };
+    ipcRenderer.on('dependency-process-status', handleProcessStatus);
+
+    return () => ipcRenderer.off('dependency-process-status', handleProcessStatus);
   },
 };
 

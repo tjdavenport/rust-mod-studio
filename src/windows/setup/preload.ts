@@ -39,4 +39,4 @@ const deps: SetupDepsApi = {
   openBrowserUrl: (url: string) => ipcRenderer.send('open-browser-url', url),
 };
 
-contextBridge.exposeInMainWorld('deps', deps);
+contextBridge.exposeInMainWorld('setupDeps', deps);

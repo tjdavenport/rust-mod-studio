@@ -30,6 +30,7 @@ const createMainWindow = (connection: ProtocolConnection) => {
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   mainWindow.webContents.openDevTools();
+  deps.bindWindow(mainWindow);
   lsp.bindWindow(connection, mainWindow);
 
   return mainWindow;

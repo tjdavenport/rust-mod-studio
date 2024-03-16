@@ -1,6 +1,3 @@
 1. Test the fragility of install process. Determine if retry logic is beneficial.
 2. If retry logic is beneficial, create the retry logic.
-3. More progress events to give user more install information.
-4. properly display install errors.
-5. Make the setup window pretty
-6. Close setup window and then startup omnisharp, then finally open the main window after setup/install is complete
+3. Convert plugin filename to CamelCase when using the plugin boilerplate

@@ -24,6 +24,9 @@ export const MSG_FAILED_CREATING_PROJECT_FILE = 'Failed to create c# project fil
 
 const ARCHIVE_PREFIX = 'oxide-rust-';
 
+/**
+ * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
+ */
 export const getLatestTaggedPlatformAsset = async () => {
   const release = await getLatestRepoRelease('/repos/OxideMod/Oxide.Rust/releases');
 
@@ -131,6 +134,9 @@ export const getInstallPath = (app: Electron.App) => {
 };
 
 const emitResponseError = () => emitInstallError(DependencyName.OxideRust, MSG_FAILED_DOWNLOADING);
+/**
+ * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
+ */
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     try {

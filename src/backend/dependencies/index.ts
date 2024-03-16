@@ -1,11 +1,11 @@
 import log from '../log';
 import { emitter } from './events';
-import { ipcMain } from 'electron';
+import { IpcMainEvent, ipcMain } from 'electron';
 import * as steamCMD from './steamCMD';
 import * as omniSharp from './omniSharp';
 import * as oxideRust from './oxide.rust';
 import * as rustDedicated from './rustDedicated';
-import { DependencyEvent, OxideTags } from '../../shared';
+import { DependencyEvent, DependencyName, OxideTags, ProcessStatusEvent } from '../../shared';
 
 export const depsInstalled = async (app: Electron.App) => {
   const installedChecks = [
@@ -61,6 +61,51 @@ export const bindIpcMain = (app: Electron.App) => {
 
     return { latestAsset, artifact };
   });
+  ipcMain.handle('dependency-stop-rust-dedicated', async () => {
+    try {
+      await rustDedicated.stop();
+      return true;
+    } catch (error) {
+      log.error(error);
+      return false;
+    }
+  });
+  ipcMain.handle('dependency-get-status', (event: IpcMainEvent, name: DependencyName) => {
+    if (name === DependencyName.RustDedicated) {
+      return rustDedicated.status;
+    }
+    if (name === DependencyName.SteamCMD) {
+      return 
+    }
+  });
+  ipcMain.handle('dependency-start-rust-dedicated', async () => {
+    /**
+     * @TODO - it may be better to allow exceptions to throw. Investigate this approach more.
+     */
+    try {
+      rustDedicated.start(app);
+
+      if (rustDedicated.instance) {
+        rustDedicated.instance.stdout.on('data', (data) => {
+          emitter.emit('rust-dedicated-stdout', data);
+        });
+      }
+      return true;
+    } catch (error) {
+      log.error(error);
+      return false;
+    }
+  });
+  ipcMain.handle('dependency-update-rust-dedicated', async () => {
+    try {
+      // Installing will update an existing install
+      await rustDedicated.install(app);
+      return true;
+    } catch (error) {
+      log.error(error);
+      return false;
+    }
+  });
   ipcMain.handle('dependency-update-oxide', async () => {
     try {
       await oxideRust.deleteArtifact(app);
@@ -73,18 +118,34 @@ export const bindIpcMain = (app: Electron.App) => {
   });
 };
 
+/**
+ * @TODO - consider drying up event forwarding
+ */
 export const bindWindow = (browserWindow: Electron.BrowserWindow) => {
+  const onRustDedicatedStdout = (data: Buffer) => {
+    browserWindow.webContents.send('rust-dedicated-stdout', data.toString());
+  };
+  emitter.on('rust-dedicated-stdout', onRustDedicatedStdout);
+
   const onProgress = (event: DependencyEvent) => {
     browserWindow.webContents.send('dependency-progress', event);
   };
   emitter.on('progress', onProgress);
+
   const onError = (event: DependencyEvent) => {
     browserWindow.webContents.send('dependency-error', event);
   };
   emitter.on('error', onError);
 
+  const onProcessStatusChange = (event: ProcessStatusEvent) => {
+    browserWindow.webContents.send('dependency-process-status', event);
+  };
+  emitter.on('process-status', onProcessStatusChange);
+
   browserWindow.on('close', () => {
+    emitter.off('rust-dedicated-stdout', onRustDedicatedStdout);
     emitter.off('progress', onProgress);
     emitter.off('error', onError);
+    emitter.off('process-status', onProcessStatusChange);
   });
 };

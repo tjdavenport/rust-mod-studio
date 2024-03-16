@@ -7,8 +7,8 @@ import * as cp from 'child_process';
 import log, { logProcess } from '../log';
 import { finished } from 'stream/promises';
 import fetch, { Response } from 'node-fetch';
-import { DependencyName } from '../../shared';
-import { emitInstallError, emitInstallProgress } from './events';
+import { DependencyName, ProcessStatus } from '../../shared';
+import { emitInstallError, emitInstallProgress, emitStatusChange } from './events';
 
 const platformURL = new Map<string, string>();
 platformURL.set(
@@ -27,6 +27,12 @@ export const MSG_FAILED_DOWNLOADING = 'Failed to download SteamCMD';
 export const MSG_FAILED_EXTRACTING = 'Failed to extract SteamCMD';
 
 export let instance: null | cp.ChildProcess = null;
+export let status: ProcessStatus = ProcessStatus.Stopped;
+
+const changeStatus = (newStatus: ProcessStatus) => {
+  status = newStatus;
+  emitStatusChange(DependencyName.SteamCMD, newStatus);
+};
 
 export const getInstallPath = (app: Electron.App) => {
   return join(path.getRootDir(app), 'SteamCMD');
@@ -60,9 +66,11 @@ export const start = (app: Electron.App, instanceArgs: string[]) => {
   );
 
   logProcess(instance);
+  changeStatus(ProcessStatus.Running);
   
   instance.on('exit', () => {
     instance = null;
+    changeStatus(ProcessStatus.Stopped);
   });
 };
 
@@ -77,6 +85,9 @@ export const isInstalled = async (app: Electron.App) => {
 };
 
 const emitResponseError = () => emitInstallError(DependencyName.SteamCMD, MSG_FAILED_DOWNLOADING);
+/**
+ * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
+ */
 const extractWindows = async (installPath: string, response: Response, app: Electron.App) => {
   await fsx.ensureDir(path.artifactDir(app));
 
@@ -94,6 +105,9 @@ const extractOSX = async (installPath: string, response: Response) => {
   await finished(response.body.pipe(extractStream));
 };
 
+/**
+ * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
+ */
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     if (instance !== null) {

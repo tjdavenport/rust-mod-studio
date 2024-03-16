@@ -57,6 +57,9 @@ input {
   font-size: 14px;
   font-family: Menlo, Monaco, "Courier New", monospace;
 }
+button {
+  cursor: pointer;
+}
 
 p {
   line-height: 1.4rem;

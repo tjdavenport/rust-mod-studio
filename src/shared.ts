@@ -21,15 +21,26 @@ export enum DependencyName {
 export enum EventKind {
   InstallError = 'InstallError',
   InstallProgress = 'InstallProgress',
-};
-
-type ProgressData = {
-  percentage: number;
+  StatusChange = 'StatusChange',
 };
 
 export type DependencyEvent = {
   name: DependencyName;
   kind: EventKind;
-  msg: string;
-  data?: ProgressData;
+  msg?: string;
+};
+
+export type ProcessStatusEvent = DependencyEvent & {
+  status: ProcessStatus
+};
+
+export enum ProcessStatus {
+  Starting = 'starting',
+  Stopping = 'stopping',
+  Running = 'running',
+  Stopped = 'stopped'
+};
+
+export const isStartedLogMessage = (message: string) => {
+  return message.includes('Server startup complete');
 };

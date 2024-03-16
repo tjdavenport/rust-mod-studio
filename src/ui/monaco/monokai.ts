@@ -5,7 +5,10 @@ const monokai: monaco.editor.IStandaloneThemeData = {
   inherit: true,
   rules: [
     { token: 'comment', foreground: '75715e', fontStyle: 'italic' },
-    { token: 'keyword', foreground: 'f92672' }, { token: 'variable.language', foreground: '66d9ef' }, { token: 'variable.other', foreground: 'f8f8f2' }, { token: 'variable.parameter', foreground: 'a6e22e' },
+    { token: 'keyword', foreground: 'f92672' },
+    { token: 'variable.language', foreground: '66d9ef' },
+    { token: 'variable.other', foreground: 'f8f8f2' },
+    { token: 'variable.parameter', foreground: 'a6e22e' },
     { token: 'constant.language', foreground: '66d9ef' },
     { token: 'constant.numeric', foreground: 'ae81ff' },
     { token: 'constant.character', foreground: 'ae81ff' },

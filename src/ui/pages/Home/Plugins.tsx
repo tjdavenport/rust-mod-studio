@@ -113,7 +113,7 @@ const Plugins = ({ projectURIs }: PluginsProps) => {
   }, [projectURIs, csharpProjectDirURI]);
 
   return (
-    <Pane className="bg-dark-grey">
+    <Pane maxWidth={'25%'} className="bg-dark-grey">
       <div style={{ display: 'flex' }}>
         <div style={{ flexGrow: 1 }}>
           <h4 style={{ marginBottom: '12px' }}>My Plugins</h4>

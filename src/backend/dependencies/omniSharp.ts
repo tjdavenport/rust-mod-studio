@@ -150,6 +150,9 @@ export const start = (app: Electron.App) => {
   return connection;
 };
 
+/**
+ * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
+ */
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     try {
