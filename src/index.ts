@@ -49,33 +49,36 @@ const createSetupWindow = () => {
   setupWindow.webContents.openDevTools();
   deps.bindWindow(setupWindow);
 
-  return setupWindow;
+  return new Promise<Electron.BrowserWindow>((resolve) => {
+    ipcMain.once('setup-complete', () => {
+      return resolve(setupWindow);
+    });
+  });
 };
 
 Menu.setApplicationMenu(applicationMenu);
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   deps.bindIpcMain(app);
   system.bindIpcMain();
   fs.bindIpcMain(app);
 
-  deps.depsInstalled(app)
-    .then((installed) => {
-      if (installed) {
-        jsonRpcConnection = omniSharp.start(app);
-        lsp.bindIpcMain(jsonRpcConnection);
-        createMainWindow(jsonRpcConnection);
-      } else {
-        const setupWindow = createSetupWindow();
-        ipcMain.once('setup-complete', () => {
-          jsonRpcConnection = omniSharp.start(app);
-          lsp.bindIpcMain(jsonRpcConnection);
-          setupWindow.close();
-          createMainWindow(jsonRpcConnection);
-        });
-      }
-    }).catch((error) => {
-      log.error(error);
-    });
+  try {
+    const installed = await deps.depsInstalled(app);
+
+    if (installed) {
+      jsonRpcConnection = await omniSharp.start(app);
+      lsp.bindIpcMain(jsonRpcConnection);
+      createMainWindow(jsonRpcConnection);
+    } else {
+      const setupWindow = await createSetupWindow();
+      jsonRpcConnection = await omniSharp.start(app);
+      lsp.bindIpcMain(jsonRpcConnection);
+      setupWindow.close();
+      createMainWindow(jsonRpcConnection);
+    }
+  } catch (error) {
+    log.error(error);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0 && jsonRpcConnection) {

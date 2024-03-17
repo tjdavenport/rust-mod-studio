@@ -1,13 +1,11 @@
-
 import fsx from 'fs-extra';
 import * as path from '../path';
 import { join } from 'node:path';
 import * as cp from 'child_process';
 import * as steamCMD from './steamCMD';
 import log, { logProcess } from '../log';
-import { DependencyInstallError } from '../error';
+import { emitInstallProgress, emitStatusChange } from './events';
 import { DependencyName, ProcessStatus, isStartedLogMessage } from '../../shared';
-import { emitInstallError, emitInstallProgress, emitStatusChange } from './events';
 
 export const MSG_INSTALLING = 'Installing RustDedicated';
 export const MSG_STEAM_CMD_REQUIRED = 'SteamCMD is required to install RustDedicated';
@@ -15,6 +13,8 @@ export const MSG_FAILED_INSTALLING = 'Failed to install RustDedicated';
 
 export let instance: null | cp.ChildProcess = null;
 export let status: ProcessStatus = ProcessStatus.Stopped;
+
+export const name = DependencyName.RustDedicated;
 
 const changeStatus = (newStatus: ProcessStatus) => {
   status = newStatus;
@@ -127,28 +127,22 @@ export const start = (app: Electron.App) => {
   logProcess(instance);
 };
 
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     try {
       if (!await steamCMD.isInstalled(app)) {
-        const error = new DependencyInstallError(MSG_STEAM_CMD_REQUIRED);
-        emitInstallError(DependencyName.RustDedicated, error.message);
-        return reject(error);
+        return reject(new Error(MSG_STEAM_CMD_REQUIRED));
       }
       emitInstallProgress(DependencyName.RustDedicated, MSG_INSTALLING);
+
       steamCMD.start(app, installArgs(app));
       steamCMD.instance.on('error', (error) => {
-        emitInstallError(DependencyName.RustDedicated, MSG_FAILED_INSTALLING);
-        return reject(error);
+        log.error(error.message);
+        return reject(new Error(MSG_FAILED_INSTALLING));
       });
       steamCMD.instance.on('exit', (code: number) => {
         if (code !== 0) {
-          const error = new DependencyInstallError(MSG_FAILED_INSTALLING);
-          emitInstallError(DependencyName.RustDedicated, error.message);
-          return reject(error);
+          return reject(new Error(MSG_FAILED_INSTALLING));
         } else {
           return resolve();
         }

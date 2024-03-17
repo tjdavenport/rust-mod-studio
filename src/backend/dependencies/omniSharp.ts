@@ -15,7 +15,8 @@ import {
   ClientCapabilities,
 } from 'vscode-languageserver-protocol';
 import { DependencyName } from '../../shared';
-import { emitInstallError, emitInstallProgress } from './events';
+import { emitInstallProgress } from './events';
+import { shellEnv as getShellEnv } from 'shell-env';
 
 const platformArchURL = new Map<string, string>();
 platformArchURL.set(
@@ -39,7 +40,6 @@ const getOmniSharpOptions = (projectPath: string): string[] => {
 export const MSG_DOWNLOADING = 'Downloading OmniSharp';
 export const MSG_EXTRACTING = 'Extracting OmniSharp';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download OmniSharp';
-export const MSG_FAILED_EXTRACTING = 'Failed to extract OmniSharp';
 
 let instance: null | cp.ChildProcess = null;
 
@@ -47,10 +47,18 @@ export const getInstallPath = (app: Electron.App) => {
   return join(path.getRootDir(app), 'omnisharp');
 };
 
+export const name = DependencyName.OmniSharp;
+
 const exec = promisify(cp.exec);
 export const hasDotnet6 = async () => {
+  /**
+   * exec() will throw if the command does not exist
+   */
   try {
-    const { stdout } = await exec('dotnet --version');
+    const env = await getShellEnv();
+    const { stdout } = await exec('dotnet --version', {
+      env
+    });
     const [ major ] = stdout.split('.');
 
     if (isNaN(+major)) {
@@ -73,12 +81,18 @@ export const getStartFilename = () => {
   return './OmniSharp';
 };
 
-export const start = (app: Electron.App) => {
+/**
+ * @TODO - there should be some user feedback when
+ * OmniSharp fails to start.
+ */
+export const start = async (app: Electron.App) => {
   if (instance !== null) {
     return;
   }
 
-  const env = { ...process.env };
+  const shellEnv = await getShellEnv();
+  const env = { ...shellEnv };
+
   if (process.platform === 'darwin') {
     env.DOTNET_ROOT = '/usr/local/share/dotnet';
   }
@@ -150,48 +164,35 @@ export const start = (app: Electron.App) => {
   return connection;
 };
 
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
-export const install = (app: Electron.App) => {
-  return new Promise<void>(async (resolve, reject) => {
-    try {
-      const downloadURL = platformArchURL.get(`${process.platform}-${process.arch}`);
-      const response = await fetch(downloadURL);
-      emitInstallProgress(DependencyName.OmniSharp, MSG_DOWNLOADING);
-      const emitResponseError = () => emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
+export const install = async (app: Electron.App) => {
+  const downloadURL = platformArchURL.get(`${process.platform}-${process.arch}`);
+  const response = await fetch(downloadURL);
+  emitInstallProgress(DependencyName.OmniSharp, MSG_DOWNLOADING);
 
-      if (response.ok) {
-        await fsx.ensureDir(getInstallPath(app));
-        await fsx.ensureDir(path.artifactDir(app));
+  if (response.ok) {
+    await fsx.ensureDir(getInstallPath(app));
+    await fsx.ensureDir(path.artifactDir(app));
 
-        const zipPath = join(path.artifactDir(app), 'omnisharp.zip');
-        const writeZip = fsx.createWriteStream(zipPath, {
-          flags: 'wx'
-        });
+    const zipPath = join(path.artifactDir(app), 'omnisharp.zip');
+    const writeZip = fsx.createWriteStream(zipPath, {
+      flags: 'wx'
+    });
 
-        await finished(response.body.pipe(writeZip));
-        emitInstallProgress(DependencyName.OmniSharp, MSG_EXTRACTING);
-        await decompress(zipPath, getInstallPath(app), {
-          map: (file) => {
-            if (file.type === 'file' && file.path.endsWith('/')) {
-              file.type = 'directory'
-            }
-            return file
-          },
-        });
-        await fsx.chmod(join(getInstallPath(app), getStartFilename()), '777');
-        return resolve();
-      } else {
-        emitResponseError();
-        return reject(new Error('download response not ok'));
-      }
-    } catch (error) {
-      log.error(error);
-      emitInstallError(DependencyName.OmniSharp, MSG_FAILED_DOWNLOADING);
-      return reject(error);
-    }
-  });
+    await finished(response.body.pipe(writeZip));
+    emitInstallProgress(DependencyName.OmniSharp, MSG_EXTRACTING);
+    await decompress(zipPath, getInstallPath(app), {
+      map: (file) => {
+        if (file.type === 'file' && file.path.endsWith('/')) {
+          file.type = 'directory'
+        }
+        return file
+      },
+    });
+    await fsx.chmod(join(getInstallPath(app), getStartFilename()), '777');
+    return;
+  } else {
+    throw new Error(MSG_FAILED_DOWNLOADING);
+  }
 };
 
 export const isInstalled = async (app: Electron.App) => {

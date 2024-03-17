@@ -7,10 +7,9 @@ import { join } from 'node:path';
 import decompress from 'decompress';
 import { finished } from 'stream/promises';
 import { DependencyName } from '../../shared';
+import { emitInstallProgress } from './events';
 import { getLatestRepoRelease } from '../github';
 import * as rustDedicated from './rustDedicated';
-import { DependencyInstallError } from '../error';
-import { emitInstallError, emitInstallProgress } from './events';
 
 export const MSG_DOWNLOADING = 'Downloading Oxide';
 export const MSG_EXTRACTING = 'Extracting Oxide';
@@ -24,15 +23,13 @@ export const MSG_FAILED_CREATING_PROJECT_FILE = 'Failed to create c# project fil
 
 const ARCHIVE_PREFIX = 'oxide-rust-';
 
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
+export const name = DependencyName.OxideRust;
+
 export const getLatestTaggedPlatformAsset = async () => {
   const release = await getLatestRepoRelease('/repos/OxideMod/Oxide.Rust/releases');
 
   if (!release) {
-    emitInstallError(DependencyName.OxideRust, MSG_FAILED_FETCHING_DOWNLOAD_URL);
-    throw new DependencyInstallError(MSG_FAILED_FETCHING_DOWNLOAD_URL);
+    throw new Error(MSG_FAILED_FETCHING_DOWNLOAD_URL);
   }
 
   if (process.platform === 'win32') {
@@ -133,72 +130,55 @@ export const getInstallPath = (app: Electron.App) => {
   return join(rustDedicatedInstallPath, 'RustDedicated_Data', 'Managed');
 };
 
-const emitResponseError = () => emitInstallError(DependencyName.OxideRust, MSG_FAILED_DOWNLOADING);
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
-export const install = (app: Electron.App) => {
-  return new Promise<void>(async (resolve, reject) => {
-    try {
-      if (!await rustDedicated.isInstalled(app)) {
-        const error = new DependencyInstallError(MSG_RUST_DEDICATED_REQUIRED);
-        emitInstallError(DependencyName.OxideRust, error.message);
-        return reject(error);
-      }
+export const install = async (app: Electron.App) => {
+  if (!await rustDedicated.isInstalled(app)) {
+    throw new Error(MSG_RUST_DEDICATED_REQUIRED);
+  }
 
-      const taggedAsset = await getLatestTaggedPlatformAsset();
-      if (!taggedAsset.asset) {
-        emitInstallError(DependencyName.OxideRust, MSG_FAILED_FETCHING_DOWNLOAD_URL);
-        return reject(new DependencyInstallError(MSG_FAILED_FETCHING_DOWNLOAD_URL));
-      }
+  const taggedAsset = await getLatestTaggedPlatformAsset();
+  if (!taggedAsset.asset) {
+    throw new Error(MSG_FAILED_FETCHING_DOWNLOAD_URL);
+  }
 
-      const downloadURL = taggedAsset.asset.browser_download_url;
-      const response = await fetch(downloadURL);
-      emitInstallProgress(DependencyName.OxideRust, MSG_DOWNLOADING);
+  const downloadURL = taggedAsset.asset.browser_download_url;
+  const response = await fetch(downloadURL);
+  emitInstallProgress(DependencyName.OxideRust, MSG_DOWNLOADING);
 
-      if (response.ok) {
-        await fsx.ensureDir(getInstallPath(app));
-        await fsx.ensureDir(path.artifactDir(app));
+  if (response.ok) {
+    await fsx.ensureDir(getInstallPath(app));
+    await fsx.ensureDir(path.artifactDir(app));
 
-        const zipFilename = `${ARCHIVE_PREFIX}${taggedAsset.tag}.zip`
-        const zipPath = join(path.artifactDir(app), zipFilename);
-        const writeZip = fsx.createWriteStream(zipPath, {
-          flags: 'wx'
-        });
+    const zipFilename = `${ARCHIVE_PREFIX}${taggedAsset.tag}.zip`
+    const zipPath = join(path.artifactDir(app), zipFilename);
+    const writeZip = fsx.createWriteStream(zipPath, {
+      flags: 'wx'
+    });
 
-        await finished(response.body.pipe(writeZip));
-        emitInstallProgress(DependencyName.OxideRust, MSG_EXTRACTING);
-        await decompress(zipPath, rustDedicated.getInstallPath(app), {
-          map: (file) => {
-            if (file.type === 'file' && file.path.endsWith('/')) {
-              file.type = 'directory'
-            }
-            return file
-          },
-        });
+    await finished(response.body.pipe(writeZip));
+    emitInstallProgress(DependencyName.OxideRust, MSG_EXTRACTING);
+    await decompress(zipPath, rustDedicated.getInstallPath(app), {
+      map: (file) => {
+        if (file.type === 'file' && file.path.endsWith('/')) {
+          file.type = 'directory'
+        }
+        return file
+      },
+    });
 
-        emitInstallProgress(DependencyName.OxideRust, MSG_CREATING_PROJECT_FILE);
-        const referenceDLLFilenames = await readReferenceDLLFilenames(app);
-        const projectFile = buildProjectFile(referenceDLLFilenames);
-        await fsx.ensureDir(projectFilePath(app));
-        await fsx.writeFile(
-          join(projectFilePath(app), projectFileFilename()),
-          projectFile
-        );
-        emitInstallProgress(DependencyName.OxideRust, MSG_COMPLETE);
-        return resolve();
-      } else {
-        emitResponseError();
-        return reject(new DependencyInstallError(MSG_FAILED_DOWNLOADING));
-      }
-
-    } catch (error) {
-      log.error(error);
-      emitResponseError();
-      return reject(error);
-    }
-  });
-};
+    emitInstallProgress(DependencyName.OxideRust, MSG_CREATING_PROJECT_FILE);
+    const referenceDLLFilenames = await readReferenceDLLFilenames(app);
+    const projectFile = buildProjectFile(referenceDLLFilenames);
+    await fsx.ensureDir(projectFilePath(app));
+    await fsx.writeFile(
+      join(projectFilePath(app), projectFileFilename()),
+      projectFile
+    );
+    emitInstallProgress(DependencyName.OxideRust, MSG_COMPLETE);
+    return;
+  } else {
+    throw new Error(MSG_FAILED_DOWNLOADING);
+  }
+}
 
 export const isInstalled = async (app: Electron.App) => {
   try {

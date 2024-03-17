@@ -1,5 +1,5 @@
 import log from '../log';
-import { emitter } from './events';
+import { emitter, emitInstallError } from './events';
 import { IpcMainEvent, ipcMain } from 'electron';
 import * as steamCMD from './steamCMD';
 import * as omniSharp from './omniSharp';
@@ -24,8 +24,15 @@ export const ensureInstalled = async (app: Electron.App) => {
   ];
 
   for (const dependency of dependencies) {
-    if (!await dependency.isInstalled(app)) {
-      await dependency.install(app);
+    try {
+      if (!await dependency.isInstalled(app)) {
+        await dependency.install(app);
+      }
+    } catch (error) {
+      // catch and emit because there may be retry logic
+      // in the future
+      emitInstallError(dependency.name, error.message);
+      throw error;
     }
   }
 };

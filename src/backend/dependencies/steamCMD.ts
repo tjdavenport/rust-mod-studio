@@ -8,7 +8,7 @@ import log, { logProcess } from '../log';
 import { finished } from 'stream/promises';
 import fetch, { Response } from 'node-fetch';
 import { DependencyName, ProcessStatus } from '../../shared';
-import { emitInstallError, emitInstallProgress, emitStatusChange } from './events';
+import { emitInstallProgress, emitStatusChange } from './events';
 
 const platformURL = new Map<string, string>();
 platformURL.set(
@@ -23,11 +23,13 @@ platformURL.set(
 export const MSG_DOWNLOADING = 'Downloading SteamCMD';
 export const MSG_EXTRACTING = 'Extracting SteamCMD';
 export const MSG_INSTALLING = 'Installing SteamCMD';
+export const MSG_ALREADY_RUNNING = 'SteamCMD is already running';
 export const MSG_FAILED_DOWNLOADING = 'Failed to download SteamCMD';
-export const MSG_FAILED_EXTRACTING = 'Failed to extract SteamCMD';
 
 export let instance: null | cp.ChildProcess = null;
 export let status: ProcessStatus = ProcessStatus.Stopped;
+
+export const name = DependencyName.SteamCMD;
 
 const changeStatus = (newStatus: ProcessStatus) => {
   status = newStatus;
@@ -84,10 +86,6 @@ export const isInstalled = async (app: Electron.App) => {
   }
 };
 
-const emitResponseError = () => emitInstallError(DependencyName.SteamCMD, MSG_FAILED_DOWNLOADING);
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
 const extractWindows = async (installPath: string, response: Response, app: Electron.App) => {
   await fsx.ensureDir(path.artifactDir(app));
 
@@ -105,13 +103,10 @@ const extractOSX = async (installPath: string, response: Response) => {
   await finished(response.body.pipe(extractStream));
 };
 
-/**
- * @TODO - Consider moving event emission into ./index.ts under a wider try/catch
- */
 export const install = (app: Electron.App) => {
   return new Promise<void>(async (resolve, reject) => {
     if (instance !== null) {
-      return reject();
+      return reject(new Error(MSG_ALREADY_RUNNING));
     }
 
     try {
@@ -136,17 +131,15 @@ export const install = (app: Electron.App) => {
           // 7 seems to be related to an error loading intl files on windows.
           // Unsure if this will be problematic.
           if (![0, 7].includes(code)) {
-            return reject(code);
+            return reject(new Error(`Exited with status code ${code}`));
           } else {
             return resolve();
           }
         });
       } else {
-        emitResponseError();
-        return reject(new Error('download response not ok'));
+        return reject(new Error(MSG_FAILED_DOWNLOADING));
       }
     } catch (error) {
-      emitResponseError();
       return reject(error);
     }
   });
