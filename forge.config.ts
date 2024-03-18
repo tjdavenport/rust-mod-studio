@@ -19,7 +19,8 @@ const config: ForgeConfig = {
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({
       mainConfig,
-      devContentSecurityPolicy: "connect-src 'self' * 'unsafe-eval'",
+      // unsafe-eval seems to be needed to load monaco from cdn
+      devContentSecurityPolicy: "worker-src 'self' blob:; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self'",
       renderer: {
         config: rendererConfig,
         entryPoints: [
