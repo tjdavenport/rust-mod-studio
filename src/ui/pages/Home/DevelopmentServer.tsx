@@ -2,7 +2,7 @@ import { Pane } from './components';
 import styled from 'styled-components';
 import { usePlatform } from '../../hooks/system';
 import BarLoader from 'react-spinners/BarLoader';
-import { GoAlertFill, GoSync } from 'react-icons/go';
+import { GoAlertFill, GoSync, GoCopy } from 'react-icons/go';
 import { ProcessStatus, DependencyName } from '../../../shared';
 import { useCallback, MouseEvent, CSSProperties, useRef, useEffect, useState } from 'react';
 import { useOxideRustTags, useOxideRustUpdater, useRustDedicatedController, useStatusMonitor, getLogsEl } from '../../hooks/dependencies';
@@ -26,6 +26,21 @@ statusClasses.set(ProcessStatus.Stopping, 'yellow');
 statusClasses.set(ProcessStatus.Running, 'green');
 
 const StatusLine = ({ status }: { status: ProcessStatus }) => {
+  const connectText = 'connect 127.0.0.1:28015';
+  const [copied, setCopied] = useState<boolean>(false);
+  const handleClipboardCopyClick = useCallback((text: string) => {
+    return () => {
+      window.system.copyToClipboard(text)
+        .then(() => {
+          setCopied(true);
+
+          setTimeout(() => {
+            setCopied(false);
+          }, 2000);
+        });
+    };
+  }, []);
+
   if (status === null) {
     return (
       <p>Status: unknown</p>
@@ -36,7 +51,15 @@ const StatusLine = ({ status }: { status: ProcessStatus }) => {
     return (
       <>
         <p>Status: <span className={statusClasses.get(status)}>{status}</span></p>
-        <p>Connect command: <span style={{ backgroundColor: '#000', padding: '2px 8px' }}>connect 127.0.0.1:28015</span></p> 
+        <p>
+          Connect command:
+          <a href="#" style={{ marginLeft: '4px' }} className="green" onClick={handleClipboardCopyClick(connectText)}>
+            <span style={{ backgroundColor: '#000', padding: '4px 8px' }}>
+              {connectText}<GoCopy style={{ marginLeft: '4px', verticalAlign: 'text-top' }}/>
+            </span>
+          </a>
+          {copied && <small> - copied!</small>}
+        </p> 
       </>
     );
   }

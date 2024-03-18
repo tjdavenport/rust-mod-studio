@@ -15,6 +15,11 @@ export const readTextByURI = async (uri: string) => {
   return buffer.toString();
 };
 
+export const removeFileByURI = async (uri: string) => {
+  const filePath = fileURLToPath(uri);
+  await fsx.unlink(filePath);
+};
+
 export const getCsharpProjectDirURI = (app: Electron.App) => {
   return pathToFileURL(path.csharpProjectDir(app)).href;
 };
@@ -42,5 +47,8 @@ export const bindIpcMain = (app: Electron.App) => {
   });
   ipcMain.handle('fs-write-text-by-uri', async (event, uri: string, contents: string) => {
     return writeTextByURI(uri, contents);
+  });
+  ipcMain.handle('fs-remove-file-by-uri', async (event, uri: string) => {
+    return removeFileByURI(uri);
   });
 };

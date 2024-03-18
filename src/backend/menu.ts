@@ -1,6 +1,8 @@
 import { URL } from 'url';
-import { Menu, ipcMain } from 'electron';
+import { Menu } from 'electron';
 import { MenuItemId, MenuClickParams } from '../shared';
+
+export const emptyMenu = Menu.buildFromTemplate([]);
 
 export const applicationMenu = Menu.buildFromTemplate([
   {
@@ -49,12 +51,28 @@ export const applicationMenu = Menu.buildFromTemplate([
       {
         label: 'Redo',
         role: 'redo' 
+      },
+      {
+        id: MenuItemId.Find,
+        label: 'Find',
+        accelerator: 'CmdOrCtrl+F',
+        click: (menuItem, BrowserWindow) => {
+          return BrowserWindow.webContents.send(`app-menu-click-${menuItem.id}`);
+        }
       }
     ],
   },
   {
     label: '&View',
     submenu: [
+      {
+        id: MenuItemId.CmdPalette,
+        label: 'Command Palette...',
+        accelerator: 'CmdOrCtrl+P',
+        click: (menuItem, BrowserWindow) => {
+          return BrowserWindow.webContents.send(`app-menu-click-${menuItem.id}`);
+        }
+      },
       {
         label: 'Toggle Dev Tools',
         role: 'toggleDevTools'

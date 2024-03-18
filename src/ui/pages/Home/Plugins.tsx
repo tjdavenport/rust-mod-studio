@@ -1,12 +1,13 @@
 import { Pane } from './components';
 import styled from 'styled-components';
-import { GoPlusCircle } from 'react-icons/go';
 import { useNavigate } from 'react-router-dom';
 import pluginBoilerplate from './pluginBoilerplate';
+import { GoPlusCircle, GoTrash } from 'react-icons/go';
 import { useCsharpProjectDirURI } from '../../hooks/fs';
 import { MouseEvent, useState, useCallback, useRef, useEffect, FormEvent } from 'react';
 
 const PluginItem = styled.div`
+  display: flex;
   margin-bottom: 8px;
   border-radius: 4px;
   border: 1px #787c6a solid;
@@ -50,9 +51,9 @@ const PluginForm = ({ cancel, onSubmit }: PluginFormProps) => {
 
   return (
     <PluginItem>
-      <form style={{ display: 'flex' }} onBlur={cancel} onSubmit={onSubmit}>
+      <form style={{ display: 'flex', flexGrow: 1 }} onBlur={cancel} onSubmit={onSubmit}>
         <div style={{ flexGrow: 1 }}>
-          <PluginInput defaultValue=".cs" pattern="^[^\s]+$" name="filename" required ref={inputRef} className="offwhite" type="text"/>
+          <PluginInput defaultValue=".cs" pattern="^\w+\.cs$" name="filename" required ref={inputRef} className="offwhite" type="text"/>
         </div>
         <div>
           <KeyHelper>Enter</KeyHelper>
@@ -62,25 +63,40 @@ const PluginForm = ({ cancel, onSubmit }: PluginFormProps) => {
   )
 };
 
-const Plugin = ({ uri }: { uri: string }) => {
+const Plugin = ({ uri, onDeleted }: { uri: string, onDeleted: () => void }) => {
   const navigate = useNavigate();
   const pluginName = uri.split('/').pop();
-  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     navigate(`/edit/${encodeURIComponent(uri)}`);
-  };
+  }, []);
+  const handleTrashClick = useCallback((event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (confirm(`Are you sure you want to delete ${pluginName}?`)) {
+      window.fs.removeFileByURI(uri)
+        .then(() => {
+          onDeleted();
+        });
+    }
+  }, []);
 
   return (
     <PluginItem>
-      <a href="#" className="offwhite" onClick={handleClick}>{pluginName}</a>
+      <div style={{ flexGrow: 1 }}>
+        <a href="#" className="offwhite" onClick={handleClick}>{pluginName}</a>
+      </div>
+      <div>
+        <a href="#" className="offwhite" onClick={handleTrashClick}><GoTrash style={{ verticalAlign: 'sub' }}/></a>
+      </div>
     </PluginItem>
   );
 };
 
 export interface PluginsProps {
   projectURIs: string[];
+  read: () => void;
 };
-const Plugins = ({ projectURIs }: PluginsProps) => {
+const Plugins = ({ projectURIs, read }: PluginsProps) => {
   const navigate = useNavigate();
   const [adding, setAdding] = useState<boolean>(false);
   const csharpProjectDirURI = useCsharpProjectDirURI();
@@ -129,7 +145,7 @@ const Plugins = ({ projectURIs }: PluginsProps) => {
       )}
       {projectURIs.map(uri => {
         return (
-          <Plugin key={`plugin-${uri}`} uri={uri}/>
+          <Plugin key={`plugin-${uri}`} uri={uri} onDeleted={() => read()}/>
         );
       })}
     </Pane>

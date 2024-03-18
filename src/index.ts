@@ -3,7 +3,7 @@ import * as fs from './backend/fs';
 import * as lsp from './backend/lsp';
 import * as system from './backend/system';
 import * as deps from './backend/dependencies';
-import { applicationMenu } from './backend/menu';
+import { applicationMenu, emptyMenu } from './backend/menu';
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import * as omniSharp from './backend/dependencies/omniSharp';
 import { ProtocolConnection } from 'vscode-languageserver-protocol';
@@ -20,9 +20,10 @@ if (require('electron-squirrel-startup')) {
 let jsonRpcConnection: ProtocolConnection | null = null;
 
 const createMainWindow = (connection: ProtocolConnection) => {
+  Menu.setApplicationMenu(applicationMenu);
   const mainWindow = new BrowserWindow({
     height: 600,
-    width: 800,
+    width: 1150,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
@@ -56,7 +57,7 @@ const createSetupWindow = () => {
   });
 };
 
-Menu.setApplicationMenu(applicationMenu);
+Menu.setApplicationMenu(emptyMenu);
 app.whenReady().then(async () => {
   deps.bindIpcMain(app);
   system.bindIpcMain();

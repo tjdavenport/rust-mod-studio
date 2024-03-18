@@ -14,7 +14,7 @@ const Home = ({ projectURIs, read }: HomeProps) => {
 
   return (
     <div style={{ display: 'flex', padding: '12px', gap: '14px' }}>
-      <Plugins projectURIs={projectURIs}/>
+      <Plugins projectURIs={projectURIs} read={read} />
       <DevelopmentServer/>
     </div>
   );

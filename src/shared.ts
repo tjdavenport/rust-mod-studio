@@ -1,5 +1,7 @@
 export enum MenuItemId {
-  Save = '1'
+  Save = '1',
+  Find = '2',
+  CmdPalette = '3',
 };
 
 export type MenuClickParams = {

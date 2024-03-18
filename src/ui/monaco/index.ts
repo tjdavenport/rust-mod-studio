@@ -1,6 +1,6 @@
 import * as lspBinds from './lsp/binds';
 import { MenuItemId } from '../../shared';
-import * as fsHandlers from './fs/handlers';
+import * as menuHandlers from './menu';
 import { PathMatch } from 'react-router-dom';
 import * as lspHandlers from './lsp/handlers';
 import * as lspProviders from './lsp/providers';
@@ -23,8 +23,10 @@ export const uriFuzzyEqual = (uriA: string | undefined | null, uriB: string | un
   return decodeURIComponent(uriA).toLowerCase() === decodeURIComponent(uriB).toLowerCase();
 };
 
-export const connectToFs = (monaco: MonacoInstance) => {
-  window.appMenu.onClick(MenuItemId.Save, fsHandlers.handleAppMenuSave(monaco));
+export const connectToMenu = (monaco: MonacoInstance) => {
+  window.appMenu.onClick(MenuItemId.Save, menuHandlers.handleAppMenuSave(monaco));
+  window.appMenu.onClick(MenuItemId.Find, menuHandlers.handleAppMenuFind(monaco));
+  window.appMenu.onClick(MenuItemId.CmdPalette, menuHandlers.handleAppMenuCmdPalette(monaco));
 };
 
 export const connectToLSP = (monaco: MonacoInstance) => {

@@ -27,6 +27,10 @@ platformArchURL.set(
   'win32-x64',
   'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.10/omnisharp-win-x64-net6.0.zip'
 );
+platformArchURL.set(
+  'linux-x64',
+  'https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.11/omnisharp-linux-x64-net6.0.zip'
+);
 
 const getOmniSharpOptions = (projectPath: string): string[] => {
   return [

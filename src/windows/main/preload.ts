@@ -3,6 +3,7 @@ import { MenuItemId, MenuClickParams, ProcessStatusEvent, ProcessStatus, Depende
 
 export interface SystemApi {
   getPlatform: () => Promise<string>;
+  copyToClipboard: (text: string) => Promise<void>;
 }
 
 export interface MainDepsApi {
@@ -25,8 +26,9 @@ export interface LspApi {
 export interface FsApi {
   readCsharpProjectDir: () => Promise<string[]>;
   getCsharpProjectDirURI: () => Promise<string>;
-  readTextByURI: (url: string) => Promise<string>;
-  writeTextByURI: (url: string, contents: string) => Promise<void>;
+  readTextByURI: (uri: string) => Promise<string>;
+  writeTextByURI: (uri: string, contents: string) => Promise<void>;
+  removeFileByURI: (uri: string) => Promise<void>;
 }
 
 export interface AppMenuApi {
@@ -36,7 +38,10 @@ export interface AppMenuApi {
 const system: SystemApi = {
   getPlatform: () => {
     return ipcRenderer.invoke('system-get-platform');
-  }
+  },
+  copyToClipboard: (text: string) => {
+    return ipcRenderer.invoke('copy-to-clipboard', text);
+  },
 };
 
 const deps: MainDepsApi = {
@@ -101,10 +106,10 @@ const fs: FsApi = {
     return ipcRenderer.invoke('fs-read-text-by-uri', uri);
   },
   writeTextByURI: (uri: string, contents: string) => {
-    /**
-     * @TODO - consider using invoke so write errors can be handled
-     */
     return ipcRenderer.invoke('fs-write-text-by-uri', uri, contents);
+  },
+  removeFileByURI: (uri: string) => {
+    return ipcRenderer.invoke('fs-remove-file-by-uri', uri);
   },
 };
 

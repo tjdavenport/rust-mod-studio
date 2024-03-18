@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 import EditPage from './pages/Edit';
 import HomePage from './pages/Home';
 import monokai from './monaco/monokai';
+import { DependencyName } from '../shared';
 import { createRoot } from 'react-dom/client';
 import { statuses } from './hooks/dependencies';
 import { useMonaco } from '@monaco-editor/react';
 import { useCsharpProjectDir } from './hooks/fs';
-import { connectToLSP, connectToFs } from './monaco';
-import { ProcessStatusEvent, DependencyName } from '../shared';
+import { connectToLSP, connectToMenu } from './monaco';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { useRustDedicatedLogWriter } from './hooks/dependencies';
 
@@ -43,7 +43,7 @@ const App = () => {
   useEffect(() => {
     if (monaco) {
       monaco.editor.defineTheme('monokai', monokai);
-      connectToFs(monaco);
+      connectToMenu(monaco);
       connectToLSP(monaco);
     }
   }, [monaco]);
