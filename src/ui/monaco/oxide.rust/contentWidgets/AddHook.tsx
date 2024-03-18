@@ -24,7 +24,7 @@ const snippetCategories = snippets.reduce((categories, snippet) => {
     categories.push(snippet.category);
     return categories;
   }
-}, []);
+}, []).sort();
 
 const Input = ({ setFilterString }: { setFilterString: (newValue: string) => void }) => {
   const theme = useContext(ThemeContext);
