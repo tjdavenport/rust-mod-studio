@@ -46,7 +46,6 @@ const createSetupWindow = () => {
   });
 
   setupWindow.loadURL(SETUP_WINDOW_WEBPACK_ENTRY);
-  setupWindow.webContents.openDevTools();
   deps.bindWindow(setupWindow);
 
   return new Promise<Electron.BrowserWindow>((resolve) => {
